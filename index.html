@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Physics – Jump & Run</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <span id="score-display">Score: 0</span>
+      <span id="level-display">Level 1</span>
+    </div>
+
+    <!-- Lernkarten Overlay -->
+    <div id="learn-card" class="hidden">
+      <div class="card-content">
+        <span class="card-icon"></span>
+        <h2 class="card-title"></h2>
+        <p class="card-text"></p>
+        <div class="card-actions">
+          <button class="card-play">&#9654; Vorlesen</button>
+          <button class="card-btn">Weiter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Touch Controls -->
+    <div id="touch-controls">
+      <button id="btn-left" class="touch-btn">◀</button>
+      <button id="btn-right" class="touch-btn">▶</button>
+      <button id="btn-jump" class="touch-btn">▲</button>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
