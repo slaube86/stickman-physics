@@ -155,6 +155,8 @@ body {
 
 #touch-action {
   display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .touch-btn {
@@ -180,6 +182,13 @@ body {
   height: 64px;
   font-size: 26px;
   border-color: rgba(255,255,255,0.45);
+}
+
+.touch-reset {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  align-self: center;
 }
 
 .touch-btn:active,

@@ -122,6 +122,11 @@ canvas.addEventListener('click', () => {
 
 setupTouchControls(keys);
 
+// Touch Reset-Button
+document.getElementById('btn-reset').addEventListener('click', () => {
+  resetAll();
+});
+
 // ─── Update ────────────────────────────────────────────────
 function update(dt) {
   if (gameState !== 'playing') return;
