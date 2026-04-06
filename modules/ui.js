@@ -153,21 +153,32 @@ export class UI {
   }
 }
 
-// Touch-Controls Setup
+// Touch-Controls Setup – mit Multi-Touch und visuellem Feedback
 export function setupTouchControls(keys) {
   const btnLeft = document.getElementById('btn-left');
   const btnRight = document.getElementById('btn-right');
   const btnJump = document.getElementById('btn-jump');
 
-  const press = (key) => { keys[key] = true; };
-  const release = (key) => { keys[key] = false; };
+  function bind(btn, key) {
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      keys[key] = true;
+      btn.classList.add('active');
+    }, { passive: false });
 
-  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); press('left'); });
-  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); release('left'); });
+    btn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      keys[key] = false;
+      btn.classList.remove('active');
+    }, { passive: false });
 
-  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); press('right'); });
-  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); release('right'); });
+    btn.addEventListener('touchcancel', (e) => {
+      keys[key] = false;
+      btn.classList.remove('active');
+    });
+  }
 
-  btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); press('jump'); });
-  btnJump.addEventListener('touchend', (e) => { e.preventDefault(); release('jump'); });
+  bind(btnLeft, 'left');
+  bind(btnRight, 'right');
+  bind(btnJump, 'jump');
 }
