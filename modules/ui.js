@@ -159,22 +159,47 @@ export function setupTouchControls(keys) {
   const btnRight = document.getElementById('btn-right');
   const btnJump = document.getElementById('btn-jump');
 
+  // Aktive Touches pro Button tracken
+  const activeTouches = new Map();
+
   function bind(btn, key) {
     btn.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      for (const t of e.changedTouches) {
+        activeTouches.set(t.identifier, { btn, key });
+      }
       keys[key] = true;
       btn.classList.add('active');
     }, { passive: false });
 
     btn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      keys[key] = false;
-      btn.classList.remove('active');
+      for (const t of e.changedTouches) {
+        activeTouches.delete(t.identifier);
+      }
+      // Nur loslassen wenn kein Touch mehr auf diesem Button
+      let stillPressed = false;
+      for (const [, v] of activeTouches) {
+        if (v.key === key) { stillPressed = true; break; }
+      }
+      if (!stillPressed) {
+        keys[key] = false;
+        btn.classList.remove('active');
+      }
     }, { passive: false });
 
     btn.addEventListener('touchcancel', (e) => {
-      keys[key] = false;
-      btn.classList.remove('active');
+      for (const t of e.changedTouches) {
+        activeTouches.delete(t.identifier);
+      }
+      let stillPressed = false;
+      for (const [, v] of activeTouches) {
+        if (v.key === key) { stillPressed = true; break; }
+      }
+      if (!stillPressed) {
+        keys[key] = false;
+        btn.classList.remove('active');
+      }
     });
   }
 

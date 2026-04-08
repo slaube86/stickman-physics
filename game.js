@@ -16,11 +16,12 @@ const ctx = canvas.getContext('2d');
 // ─── Game State ────────────────────────────────────────────
 const keys = { left: false, right: false, jump: false };
 let currentLevelId = 1;
+let maxLevelUnlocked = 1;
 let level = null;
 let player = null;
 let camera = 0;
 let score = 0;
-let gameState = 'menu'; // menu, playing, levelComplete, gameOver
+let gameState = 'menu'; // menu, playing, levelSelect, levelComplete, gameOver
 let lastTime = 0;
 let levelCompleteTimer = 0;
 
@@ -32,6 +33,7 @@ const learnSystem = new LearnSystem();
 function saveProgress() {
   const data = {
     level: currentLevelId,
+    maxLevel: maxLevelUnlocked,
     score: score,
     factsLearned: [...learnSystem.shownFacts],
   };
@@ -48,6 +50,7 @@ function loadProgress() {
     if (raw) {
       const data = JSON.parse(raw);
       currentLevelId = data.level || 1;
+      maxLevelUnlocked = data.maxLevel || data.level || 1;
       score = data.score || 0;
       if (data.factsLearned) {
         data.factsLearned.forEach(f => learnSystem.shownFacts.add(f));
@@ -77,11 +80,7 @@ function resetAll() {
   currentLevelId = 1;
   score = 0;
   learnSystem.reset();
-  try {
-    localStorage.removeItem('stickmanSave');
-  } catch {
-    // ignorieren
-  }
+  saveProgress();
   gameState = 'menu';
 }
 
@@ -101,6 +100,25 @@ document.addEventListener('keydown', (e) => {
       startLevel(currentLevelId);
     }
   }
+  // L = Level-Auswahl
+  if (e.code === 'KeyL') {
+    if (gameState === 'menu' || gameState === 'playing') {
+      gameState = 'levelSelect';
+    }
+  }
+  // Escape = Zurück zum Menü
+  if (e.code === 'Escape') {
+    if (gameState === 'levelSelect') {
+      gameState = 'menu';
+    }
+  }
+  // Zahlen 1-9 in Level-Auswahl
+  if (gameState === 'levelSelect') {
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= maxLevelUnlocked && num <= getTotalLevels()) {
+      startLevel(num);
+    }
+  }
   // R = Kompletter Neustart
   if (e.code === 'KeyR') {
     resetAll();
@@ -113,8 +131,112 @@ document.addEventListener('keyup', (e) => {
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = false;
 });
 
-// Touch-Start für Menü
-canvas.addEventListener('click', () => {
+// ─── Level-Select: Box-Positionen berechnen ───────────────
+function getLevelBoxes() {
+  const total = getTotalLevels();
+  const boxW = 80;
+  const boxH = 80;
+  const gap = 20;
+  const cols = Math.min(total, 4);
+  const totalW = cols * boxW + (cols - 1) * gap;
+  const startX = (canvas.width - totalW) / 2;
+  const startY = 160;
+  const boxes = [];
+  for (let i = 0; i < total; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    boxes.push({
+      id: i + 1,
+      x: startX + col * (boxW + gap),
+      y: startY + row * (boxH + gap),
+      w: boxW,
+      h: boxH,
+    });
+  }
+  return boxes;
+}
+
+function drawLevelSelect() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Level auswählen', canvas.width / 2, 80);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '14px sans-serif';
+  ctx.fillText('Tippe auf ein Level oder drücke die Zahl', canvas.width / 2, 115);
+
+  const boxes = getLevelBoxes();
+  for (const box of boxes) {
+    const unlocked = box.id <= maxLevelUnlocked;
+    const completed = box.id < maxLevelUnlocked;
+
+    // Box
+    ctx.strokeStyle = unlocked ? '#fff' : '#444';
+    ctx.lineWidth = unlocked ? 1.5 : 1;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+    // Level-Nummer
+    ctx.fillStyle = unlocked ? '#fff' : '#444';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(box.id, box.x + box.w / 2, box.y + 35);
+
+    // Level-Name
+    const lvlData = loadLevel(box.id);
+    if (lvlData) {
+      ctx.font = '11px sans-serif';
+      ctx.fillText(lvlData.name, box.x + box.w / 2, box.y + 55);
+    }
+
+    // Haken bei abgeschlossenen Levels
+    if (completed) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('✓', box.x + box.w / 2, box.y + 75);
+    }
+
+    // Schloss bei gesperrten Levels
+    if (!unlocked) {
+      ctx.fillStyle = '#444';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('🔒', box.x + box.w / 2, box.y + 75);
+    }
+  }
+
+  ctx.fillStyle = '#555';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ESC = Zurück', canvas.width / 2, canvas.height - 20);
+}
+
+// Touch/Klick auf Canvas
+canvas.addEventListener('click', (e) => {
+  if (gameState === 'levelSelect') {
+    // Klick-Position relativ zum Canvas berechnen
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clickX = (e.clientX - rect.left) * scaleX;
+    const clickY = (e.clientY - rect.top) * scaleY;
+
+    const boxes = getLevelBoxes();
+    for (const box of boxes) {
+      if (
+        clickX >= box.x && clickX <= box.x + box.w &&
+        clickY >= box.y && clickY <= box.y + box.h &&
+        box.id <= maxLevelUnlocked
+      ) {
+        startLevel(box.id);
+        return;
+      }
+    }
+    return;
+  }
+
   if (gameState === 'menu' || gameState === 'gameOver') {
     startLevel(currentLevelId);
   }
@@ -125,6 +247,15 @@ setupTouchControls(keys);
 // Touch Reset-Button
 document.getElementById('btn-reset').addEventListener('click', () => {
   resetAll();
+});
+
+// Touch Level-Select Button
+document.getElementById('btn-levels').addEventListener('click', () => {
+  if (gameState === 'levelSelect') {
+    gameState = 'menu';
+  } else {
+    gameState = 'levelSelect';
+  }
 });
 
 // ─── Update ────────────────────────────────────────────────
@@ -200,6 +331,10 @@ function update(dt) {
     gameState = 'levelComplete';
     score += 100;
     levelCompleteTimer = 0;
+    // Höchstes freigeschaltetes Level aktualisieren
+    if (currentLevelId + 1 > maxLevelUnlocked) {
+      maxLevelUnlocked = currentLevelId + 1;
+    }
     saveProgress();
   }
 
@@ -215,6 +350,11 @@ function render() {
 
   if (gameState === 'menu') {
     drawMenu();
+    return;
+  }
+
+  if (gameState === 'levelSelect') {
+    drawLevelSelect();
     return;
   }
 
@@ -282,8 +422,13 @@ function drawMenu() {
   // Steuerung
   ctx.fillStyle = '#555';
   ctx.font = '13px sans-serif';
-  ctx.fillText('← → Laufen  |  ↑ / Leertaste Springen  |  R = Neustart', canvas.width / 2, 360);
-  ctx.fillText(`Level ${currentLevelId}  |  Score: ${score}`, canvas.width / 2, 385);
+  ctx.fillText('← → Laufen  |  ↑ / Leertaste Springen  |  R = Neustart', canvas.width / 2, 350);
+  ctx.fillText(`Level ${currentLevelId}  |  Score: ${score}`, canvas.width / 2, 370);
+
+  // Level-Auswahl Hinweis
+  ctx.fillStyle = '#888';
+  ctx.font = '14px sans-serif';
+  ctx.fillText('L = Level auswählen', canvas.width / 2, 395);
 }
 
 function drawGameOver() {

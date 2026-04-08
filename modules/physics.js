@@ -3,14 +3,14 @@
 export const GRAVITY = 0.5;
 export const JUMP_FORCE = -11;
 export const MAX_SPEED = 5;
-export const ACCELERATION = 0.6;
+export const ACCELERATION = 0.8;
 
 // Reibungswerte je Untergrund
 export const SURFACES = {
-  normal:    { friction: 0.85, label: 'Normal' },
+  normal:    { friction: 0.70, label: 'Normal' },
   ice:       { friction: 0.98, label: 'Eis' },
   sand:      { friction: 0.60, label: 'Sand' },
-  trampolin: { friction: 0.85, bounce: 1.3, label: 'Trampolin' }
+  trampolin: { friction: 0.70, bounce: 1.3, label: 'Trampolin' }
 };
 
 export function applyGravity(player) {
@@ -34,7 +34,7 @@ export function applyFriction(player, surface = SURFACES.normal) {
   if (player.onGround) {
     player.vx *= surface.friction;
     // Sehr kleine Geschwindigkeiten auf 0 setzen
-    if (Math.abs(player.vx) < 0.1) player.vx = 0;
+    if (Math.abs(player.vx) < 0.3) player.vx = 0;
   }
 }
 
