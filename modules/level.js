@@ -65,7 +65,7 @@ export const LEVELS = [
       // Trampolin!
       { x: 1250, y: 365, w: 60,  h: 10, surface: 'trampolin' },
       // Hohe Zielplattform
-      { x: 1350, y: 200, w: 100, h: 15, surface: 'normal' },
+      { x: 1350, y: 240, w: 100, h: 15, surface: 'normal' },
     ],
     coins: [
       { x: 300, y: 345 },
@@ -75,14 +75,14 @@ export const LEVELS = [
       { x: 700, y: 345 },
       { x: 980, y: 275 },
       { x: 1280, y: 340 },
-      { x: 1390, y: 175 },
+      { x: 1390, y: 215 },
     ],
     learnTriggers: [
       { x: 300, y: 340, w: 40, h: 40, factId: 'friction', triggered: false },
       { x: 930, y: 340, w: 40, h: 40, factId: 'damping', triggered: false },
       { x: 1260, y: 330, w: 40, h: 40, factId: 'elasticity', triggered: false },
     ],
-    goal: { x: 1370, y: 170, w: 60, h: 30 },
+    goal: { x: 1370, y: 210, w: 60, h: 30 },
     worldWidth: 1550,
   },
 

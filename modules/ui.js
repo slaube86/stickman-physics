@@ -66,14 +66,43 @@ export class UI {
 
   // Coins zeichnen – kleine weiße Kreise
   drawCoins(ctx, coins, camera) {
-    ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1.5;
+    const now = Date.now();
+    const ANIM_DURATION = 600; // ms
 
     for (const coin of coins) {
-      if (coin.collected) continue;
       const x = coin.x - camera;
       if (x < -20 || x > this.canvas.width + 20) continue;
 
+      // Sammel-Animation
+      if (coin.collected) {
+        if (!coin.collectTime) continue;
+        const elapsed = now - coin.collectTime;
+        if (elapsed >= ANIM_DURATION) continue;
+
+        const t = elapsed / ANIM_DURATION; // 0 → 1
+        const alpha = 1 - t;
+        const scale = 1 + t * 2.5;
+        const offsetY = -t * 30;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(x, coin.y + offsetY, 5 * scale, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // +10 Text
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${12 + t * 6}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('+10', x, coin.y + offsetY - 12 * scale);
+        ctx.restore();
+        continue;
+      }
+
+      // Normale Münze
+      ctx.strokeStyle = '#fff';
       ctx.beginPath();
       ctx.arc(x, coin.y, 5, 0, Math.PI * 2);
       ctx.stroke();

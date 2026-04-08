@@ -1,13 +1,13 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from './modules/stickman.js';
+import { Stickman } from './modules/stickman.js?v=3';
 import {
   applyGravity, applyMovement, applyFriction, applyPosition,
   resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js';
-import { loadLevel, getTotalLevels } from './modules/level.js';
-import { LearnSystem } from './modules/learn.js';
-import { UI, setupTouchControls } from './modules/ui.js';
+} from './modules/physics.js?v=3';
+import { loadLevel, getTotalLevels } from './modules/level.js?v=3';
+import { LearnSystem } from './modules/learn.js?v=3';
+import { UI, setupTouchControls } from './modules/ui.js?v=3';
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
@@ -300,6 +300,7 @@ function update(dt) {
     const dy = (player.y + player.h / 2) - coin.y;
     if (Math.sqrt(dx * dx + dy * dy) < 20) {
       coin.collected = true;
+      coin.collectTime = Date.now(); // Zeitstempel für Animation
       score += 10;
     }
   }
