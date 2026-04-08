@@ -142,4 +142,99 @@ export class Stickman {
   getBounds() {
     return { x: this.x, y: this.y, w: this.w, h: this.h };
   }
+
+  // Wall-E Modus zeichnen
+  drawWallE(ctx) {
+    ctx.save();
+    ctx.translate(this.x + this.w / 2, this.y + this.h);
+    ctx.scale(this.facing, 1);
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Ketten/Räder (unten)
+    const trackY = 0;
+    const trackW = 14;
+    const trackH = 6;
+    // Linke Kette
+    ctx.strokeRect(-trackW - 1, trackY - trackH, trackW, trackH);
+    // Rechte Kette
+    ctx.strokeRect(1, trackY - trackH, trackW, trackH);
+    // Kettendetails
+    for (let i = 0; i < 3; i++) {
+      const offset = (this.animFrame * 3 + i * 4) % 12;
+      ctx.beginPath();
+      ctx.moveTo(-trackW + offset, trackY - trackH);
+      ctx.lineTo(-trackW + offset, trackY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(1 + offset, trackY - trackH);
+      ctx.lineTo(1 + offset, trackY);
+      ctx.stroke();
+    }
+
+    // Körper (Würfel/Box)
+    const bodyW = 22;
+    const bodyH = 18;
+    const bodyY = -trackH - bodyH;
+    ctx.strokeRect(-bodyW / 2, bodyY, bodyW, bodyH);
+
+    // Bauch-Detail (Müllklappe)
+    ctx.beginPath();
+    ctx.moveTo(-bodyW / 2 + 3, bodyY + bodyH / 2);
+    ctx.lineTo(bodyW / 2 - 3, bodyY + bodyH / 2);
+    ctx.stroke();
+
+    // Hals
+    const neckY = bodyY;
+    ctx.beginPath();
+    ctx.moveTo(0, neckY);
+    ctx.lineTo(0, neckY - 6);
+    ctx.stroke();
+
+    // Augen (Fernglas-Stil)
+    const eyeY = neckY - 12;
+    const eyeR = 6;
+    // Verbindungsstange
+    ctx.beginPath();
+    ctx.moveTo(-8, eyeY);
+    ctx.lineTo(8, eyeY);
+    ctx.stroke();
+    // Linkes Auge
+    ctx.beginPath();
+    ctx.arc(-8, eyeY, eyeR, 0, Math.PI * 2);
+    ctx.stroke();
+    // Rechtes Auge
+    ctx.beginPath();
+    ctx.arc(8, eyeY, eyeR, 0, Math.PI * 2);
+    ctx.stroke();
+    // Pupillen
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-8, eyeY, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(8, eyeY, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arme
+    const armY = bodyY + 4;
+    const armSwing = this._getArmSwing();
+    // Linker Arm (Greifarm)
+    ctx.beginPath();
+    ctx.moveTo(-bodyW / 2, armY);
+    ctx.lineTo(-bodyW / 2 - 6, armY + 10 + armSwing.left);
+    ctx.lineTo(-bodyW / 2 - 3, armY + 14 + armSwing.left);
+    ctx.stroke();
+    // Rechter Arm (Greifarm)
+    ctx.beginPath();
+    ctx.moveTo(bodyW / 2, armY);
+    ctx.lineTo(bodyW / 2 + 6, armY + 10 + armSwing.right);
+    ctx.lineTo(bodyW / 2 + 3, armY + 14 + armSwing.right);
+    ctx.stroke();
+
+    ctx.restore();
+  }
 }

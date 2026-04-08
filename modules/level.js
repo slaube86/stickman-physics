@@ -128,6 +128,58 @@ export const LEVELS = [
     goal: { x: 1360, y: 220, w: 60, h: 30 },
     worldWidth: 1500,
   },
+
+  // Level 4 – Wall-E findet Eve
+  {
+    id: 4,
+    name: 'Wall-E findet Eve',
+    theme: 'walle',
+    spawnX: 50,
+    spawnY: 300,
+    platforms: [
+      // Schrottplatz-Start
+      { x: 0,   y: 370, w: 250,  h: 30, surface: 'normal' },
+      { x: 200, y: 320, w: 70,  h: 15, surface: 'normal' },
+      { x: 320, y: 370, w: 150,  h: 30, surface: 'sand' },
+      // Müllberge
+      { x: 500, y: 340, w: 100, h: 30, surface: 'normal' },
+      { x: 550, y: 290, w: 70,  h: 15, surface: 'normal' },
+      { x: 650, y: 370, w: 120,  h: 30, surface: 'normal' },
+      // Trampolin-Sprungfeld (Wall-E Pressblock)
+      { x: 800, y: 365, w: 60,  h: 10, surface: 'trampolin' },
+      // Plattformen hoch zu Eve
+      { x: 900, y: 300, w: 90, h: 15, surface: 'normal' },
+      { x: 1020, y: 370, w: 200, h: 30, surface: 'normal' },
+      { x: 1060, y: 310, w: 80, h: 15, surface: 'normal' },
+      // Eis-Rutsche (glatter Metall-Boden)
+      { x: 1250, y: 370, w: 250, h: 30, surface: 'ice' },
+      { x: 1300, y: 310, w: 70, h: 15, surface: 'ice' },
+      // Letzter Sprung zu Eve
+      { x: 1530, y: 370, w: 200, h: 30, surface: 'normal' },
+      { x: 1580, y: 310, w: 80, h: 15, surface: 'normal' },
+      { x: 1700, y: 280, w: 100, h: 15, surface: 'normal' },
+    ],
+    coins: [
+      { x: 230, y: 295 },
+      { x: 380, y: 345 },
+      { x: 540, y: 315 },
+      { x: 580, y: 265 },
+      { x: 700, y: 345 },
+      { x: 830, y: 340 },
+      { x: 940, y: 275 },
+      { x: 1100, y: 285 },
+      { x: 1330, y: 285 },
+      { x: 1620, y: 285 },
+      { x: 1740, y: 255 },
+    ],
+    learnTriggers: [
+      { x: 340, y: 340, w: 40, h: 40, factId: 'walle_energy', triggered: false },
+      { x: 810, y: 330, w: 40, h: 40, factId: 'walle_solar', triggered: false },
+      { x: 1270, y: 340, w: 40, h: 40, factId: 'walle_friction_metal', triggered: false },
+    ],
+    goal: { x: 1710, y: 250, w: 60, h: 30 },
+    worldWidth: 1850,
+  },
 ];
 
 export function loadLevel(id) {

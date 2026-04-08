@@ -1,13 +1,13 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from './modules/stickman.js?v=3';
+import { Stickman } from './modules/stickman.js?v=5';
 import {
   applyGravity, applyMovement, applyFriction, applyPosition,
   resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js?v=4';
-import { loadLevel, getTotalLevels } from './modules/level.js?v=3';
-import { LearnSystem } from './modules/learn.js?v=3';
-import { UI, setupTouchControls } from './modules/ui.js?v=3';
+} from './modules/physics.js?v=5';
+import { loadLevel, getTotalLevels } from './modules/level.js?v=5';
+import { LearnSystem } from './modules/learn.js?v=5';
+import { UI, setupTouchControls } from './modules/ui.js?v=5';
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
@@ -372,12 +372,16 @@ function render() {
   ui.drawPlatforms(ctx, level.platforms, camera);
   ui.drawCoins(ctx, level.coins, camera);
   ui.drawLearnTriggers(ctx, level.learnTriggers, camera);
-  ui.drawGoal(ctx, level.goal, camera);
+  ui.drawGoal(ctx, level.goal, camera, level.theme);
 
   // Stickman zeichnen (relativ zur Kamera)
   ctx.save();
   ctx.translate(-camera, 0);
-  player.draw(ctx);
+  if (level.theme === 'walle') {
+    player.drawWallE(ctx);
+  } else {
+    player.draw(ctx);
+  }
   ctx.restore();
 
   ctx.restore();

@@ -41,6 +41,21 @@ const FACTS = {
     title: 'Impuls & Kollision',
     text: 'Wenn du gegen eine Wand läufst, überträgst du deinen Impuls. Je schneller, desto stärker der Aufprall!',
   },
+  walle_energy: {
+    icon: '🔋',
+    title: 'Energie & Recycling',
+    text: 'Wall-E presst Müll zu Würfeln – dafür braucht er Energie! Energie kann nicht verloren gehen, nur umgewandelt werden.',
+  },
+  walle_solar: {
+    icon: '☀️',
+    title: 'Solarenergie',
+    text: 'Wall-E lädt sich mit Sonnenlicht auf! Die Sonne schickt Lichtenergie zur Erde – das nennt man Solarenergie.',
+  },
+  walle_friction_metal: {
+    icon: '⚙️',
+    title: 'Reibung auf Metall',
+    text: 'Glatte Metallflächen haben wenig Reibung – fast wie Eis! Wall-Es Ketten helfen ihm, nicht wegzurutschen.',
+  },
 };
 
 export class LearnSystem {

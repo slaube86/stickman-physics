@@ -141,10 +141,15 @@ export class UI {
     }
   }
 
-  // Ziel zeichnen – einfache Flagge aus Linien
-  drawGoal(ctx, goal, camera) {
+  // Ziel zeichnen – einfache Flagge aus Linien oder Eve
+  drawGoal(ctx, goal, camera, theme) {
     const x = goal.x - camera;
     if (x < -80 || x > this.canvas.width + 80) return;
+
+    if (theme === 'walle') {
+      this._drawEve(ctx, x, goal);
+      return;
+    }
 
     const pulse = Math.sin(Date.now() / 400) * 2;
 
@@ -170,6 +175,62 @@ export class UI {
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('ZIEL', x + 30, goal.y - 46 + pulse);
+  }
+
+  // Eve zeichnen (eiförmig, schwebend)
+  _drawEve(ctx, x, goal) {
+    const centerX = x + 30;
+    const baseY = goal.y;
+    const hover = Math.sin(Date.now() / 500) * 4;
+    const cy = baseY - 15 + hover;
+
+    ctx.save();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    // Körper (Ei-Form)
+    ctx.beginPath();
+    ctx.ellipse(centerX, cy, 12, 18, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Kopf-Visier (Augenbereich)
+    ctx.beginPath();
+    ctx.ellipse(centerX, cy - 6, 9, 5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Augen (leuchtende Punkte)
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(centerX - 4, cy - 6, 2.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(centerX + 4, cy - 6, 2.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arme (schwebend, leicht seitlich)
+    const armWave = Math.sin(Date.now() / 600) * 3;
+    // Linker Arm
+    ctx.beginPath();
+    ctx.moveTo(centerX - 12, cy - 2);
+    ctx.quadraticCurveTo(centerX - 22, cy + armWave, centerX - 18, cy + 10 + armWave);
+    ctx.stroke();
+    // Rechter Arm
+    ctx.beginPath();
+    ctx.moveTo(centerX + 12, cy - 2);
+    ctx.quadraticCurveTo(centerX + 22, cy - armWave, centerX + 18, cy + 10 - armWave);
+    ctx.stroke();
+
+    // "EVE" Text
+    const blink = Math.sin(Date.now() / 300) * 0.3 + 0.7;
+    ctx.globalAlpha = blink;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('EVE', centerX, cy - 28 + hover);
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
   }
 
   // Physik-Info Anzeige
