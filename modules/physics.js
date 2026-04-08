@@ -2,8 +2,8 @@
 
 export const GRAVITY = 0.5;
 export const JUMP_FORCE = -9.5;
-export const MAX_SPEED = 5;
-export const ACCELERATION = 0.8;
+export const MAX_SPEED = 3.5;
+export const ACCELERATION = 0.7;
 
 // Reibungswerte je Untergrund
 export const SURFACES = {

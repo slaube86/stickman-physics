@@ -4,7 +4,7 @@ import { Stickman } from './modules/stickman.js?v=3';
 import {
   applyGravity, applyMovement, applyFriction, applyPosition,
   resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js?v=3';
+} from './modules/physics.js?v=4';
 import { loadLevel, getTotalLevels } from './modules/level.js?v=3';
 import { LearnSystem } from './modules/learn.js?v=3';
 import { UI, setupTouchControls } from './modules/ui.js?v=3';
