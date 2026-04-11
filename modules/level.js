@@ -180,6 +180,62 @@ export const LEVELS = [
     goal: { x: 1710, y: 250, w: 60, h: 30 },
     worldWidth: 1850,
   },
+
+  // Level 5 – Minecraft: Blöcke & Schwerkraft
+  {
+    id: 5,
+    name: 'Minecraft Welt',
+    theme: 'minecraft',
+    spawnX: 50,
+    spawnY: 300,
+    platforms: [
+      // Gras-Boden Start
+      { x: 0,   y: 370, w: 300,  h: 30, surface: 'normal' },
+      // Stufen aus Blöcken (aufsteigend)
+      { x: 320, y: 340, w: 60,  h: 30, surface: 'normal' },
+      { x: 400, y: 310, w: 60,  h: 30, surface: 'normal' },
+      { x: 480, y: 280, w: 60,  h: 30, surface: 'normal' },
+      // Schwebende Plattform
+      { x: 580, y: 240, w: 120, h: 15, surface: 'normal' },
+      // Sand-Bereich (fällt in Minecraft!)
+      { x: 740, y: 370, w: 200, h: 30, surface: 'sand' },
+      { x: 780, y: 310, w: 80,  h: 15, surface: 'sand' },
+      // Lava-Lücke – kein Boden hier!
+      // Obsidian-Brücke
+      { x: 1000, y: 350, w: 60,  h: 15, surface: 'normal' },
+      // Eis (Eisboden wie im Eisbiom)
+      { x: 1100, y: 370, w: 250, h: 30, surface: 'ice' },
+      { x: 1150, y: 310, w: 70,  h: 15, surface: 'ice' },
+      { x: 1260, y: 270, w: 70,  h: 15, surface: 'normal' },
+      // Slime-Block (Trampolin)
+      { x: 1380, y: 365, w: 60,  h: 10, surface: 'trampolin' },
+      // End-Bereich
+      { x: 1480, y: 370, w: 200, h: 30, surface: 'normal' },
+      { x: 1520, y: 310, w: 80,  h: 15, surface: 'normal' },
+      { x: 1640, y: 260, w: 100, h: 15, surface: 'normal' },
+    ],
+    coins: [
+      { x: 345, y: 315 },
+      { x: 425, y: 285 },
+      { x: 505, y: 255 },
+      { x: 630, y: 215 },
+      { x: 810, y: 285 },
+      { x: 870, y: 345 },
+      { x: 1025, y: 325 },
+      { x: 1180, y: 285 },
+      { x: 1290, y: 245 },
+      { x: 1410, y: 340 },
+      { x: 1560, y: 285 },
+      { x: 1680, y: 235 },
+    ],
+    learnTriggers: [
+      { x: 490, y: 250, w: 40, h: 40, factId: 'mc_gravity', triggered: false },
+      { x: 745, y: 330, w: 40, h: 40, factId: 'mc_sand', triggered: false },
+      { x: 1390, y: 330, w: 40, h: 40, factId: 'mc_slime', triggered: false },
+    ],
+    goal: { x: 1650, y: 230, w: 60, h: 30 },
+    worldWidth: 1800,
+  },
 ];
 
 export function loadLevel(id) {

@@ -237,4 +237,64 @@ export class Stickman {
 
     ctx.restore();
   }
+
+  // Minecraft Steve zeichnen (blocky pixel look)
+  drawSteve(ctx) {
+    ctx.save();
+    ctx.translate(this.x + this.w / 2, this.y + this.h);
+    ctx.scale(this.facing, 1);
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'square';
+    ctx.lineJoin = 'miter';
+
+    // Beine (2 Blöcke)
+    const legSwing = this._getArmSwing();
+    // Linkes Bein
+    ctx.strokeRect(-7, -12 + legSwing.left * 0.3, 5, 12);
+    // Rechtes Bein
+    ctx.strokeRect(2, -12 + legSwing.right * 0.3, 5, 12);
+
+    // Körper (Block)
+    const bodyY = -32;
+    ctx.strokeRect(-8, bodyY, 16, 20);
+    // Körper-Detail (Gürtel)
+    ctx.beginPath();
+    ctx.moveTo(-8, bodyY + 16);
+    ctx.lineTo(8, bodyY + 16);
+    ctx.stroke();
+
+    // Arme
+    const armSwing = this._getArmSwing();
+    // Linker Arm
+    ctx.strokeRect(-13, bodyY + 1 + armSwing.left, 5, 14);
+    // Rechter Arm
+    ctx.strokeRect(8, bodyY + 1 + armSwing.right, 5, 14);
+
+    // Kopf (größerer Block – Minecraft-typisch)
+    const headY = bodyY - 14;
+    ctx.strokeRect(-8, headY, 16, 14);
+
+    // Augen (Pixel-Stil)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-5, headY + 5, 3, 2);
+    ctx.fillRect(2, headY + 5, 3, 2);
+
+    // Mund
+    ctx.beginPath();
+    ctx.moveTo(-2, headY + 10);
+    ctx.lineTo(2, headY + 10);
+    ctx.stroke();
+
+    // Haare (oberer Rand)
+    ctx.beginPath();
+    ctx.moveTo(-8, headY);
+    ctx.lineTo(-8, headY - 2);
+    ctx.lineTo(8, headY - 2);
+    ctx.lineTo(8, headY);
+    ctx.stroke();
+
+    ctx.restore();
+  }
 }

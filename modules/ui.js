@@ -1,5 +1,8 @@
 // ui.js – HUD, Rendering-Hilfen, Touch Controls
 
+const GAME_W = 800;
+const GAME_H = 400;
+
 export class UI {
   constructor(canvas) {
     this.canvas = canvas;
@@ -15,7 +18,7 @@ export class UI {
   // Hintergrund zeichnen – rein schwarz
   drawBackground(ctx, camera, theme) {
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
   }
 
   // Plattformen zeichnen – nur dünne weiße Linien
@@ -28,7 +31,7 @@ export class UI {
       const y = p.y;
 
       // Außerhalb des Sichtfelds? Überspringen
-      if (x + p.w < -50 || x > this.canvas.width + 50) continue;
+      if (x + p.w < -50 || x > GAME_W + 50) continue;
 
       // Oberkante als Hauptlinie
       ctx.beginPath();
@@ -72,7 +75,7 @@ export class UI {
 
     for (const coin of coins) {
       const x = coin.x - camera;
-      if (x < -20 || x > this.canvas.width + 20) continue;
+      if (x < -20 || x > GAME_W + 20) continue;
 
       // Sammel-Animation
       if (coin.collected) {
@@ -120,7 +123,7 @@ export class UI {
     for (const t of triggers) {
       if (t.triggered) continue;
       const x = t.x - camera + t.w / 2;
-      if (x < -30 || x > this.canvas.width + 30) continue;
+      if (x < -30 || x > GAME_W + 30) continue;
 
       const y = t.y + t.h / 2;
       const pulse = Math.sin(Date.now() / 300) * 3;
@@ -144,10 +147,15 @@ export class UI {
   // Ziel zeichnen – einfache Flagge aus Linien oder Eve
   drawGoal(ctx, goal, camera, theme) {
     const x = goal.x - camera;
-    if (x < -80 || x > this.canvas.width + 80) return;
+    if (x < -80 || x > GAME_W + 80) return;
 
     if (theme === 'walle') {
       this._drawEve(ctx, x, goal);
+      return;
+    }
+
+    if (theme === 'minecraft') {
+      this._drawCreeper(ctx, x, goal);
       return;
     }
 
@@ -233,13 +241,57 @@ export class UI {
     ctx.restore();
   }
 
+  // Creeper zeichnen (Minecraft-Stil, blockig)
+  _drawCreeper(ctx, x, goal) {
+    const centerX = x + 30;
+    const baseY = goal.y + goal.h;
+    const pulse = Math.sin(Date.now() / 600) * 1.5;
+
+    ctx.save();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'square';
+    ctx.lineJoin = 'miter';
+
+    // Füße (2 Blöcke)
+    ctx.strokeRect(centerX - 9, baseY - 10, 7, 10);
+    ctx.strokeRect(centerX + 2, baseY - 10, 7, 10);
+
+    // Körper (hoher Block)
+    ctx.strokeRect(centerX - 8, baseY - 30, 16, 20);
+
+    // Kopf (großer Block)
+    const headY = baseY - 46 + pulse;
+    ctx.strokeRect(centerX - 10, headY, 20, 16);
+
+    // Creeper-Gesicht (das ikonische Muster)
+    ctx.fillStyle = '#fff';
+    // Augen (2 quadratische Pixel)
+    ctx.fillRect(centerX - 7, headY + 3, 4, 4);
+    ctx.fillRect(centerX + 3, headY + 3, 4, 4);
+    // Mund (T-Form / trauriges Gesicht)
+    ctx.fillRect(centerX - 2, headY + 8, 4, 2);
+    ctx.fillRect(centerX - 4, headY + 10, 2, 3);
+    ctx.fillRect(centerX + 2, headY + 10, 2, 3);
+
+    // "ZIEL" Text
+    const blink = Math.sin(Date.now() / 400) * 0.3 + 0.7;
+    ctx.globalAlpha = blink;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ZIEL', centerX, headY - 6 + pulse);
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+
   // Physik-Info Anzeige
   drawPhysicsInfo(ctx, player) {
     const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2).toFixed(1);
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`v: ${speed} px/f`, this.canvas.width - 10, this.canvas.height - 10);
+    ctx.fillText(`v: ${speed} px/f`, GAME_W - 10, GAME_H - 10);
   }
 }
 

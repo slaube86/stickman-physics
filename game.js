@@ -1,17 +1,32 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from './modules/stickman.js?v=5';
+import { Stickman } from './modules/stickman.js?v=9';
 import {
   applyGravity, applyMovement, applyFriction, applyPosition,
   resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js?v=5';
-import { loadLevel, getTotalLevels } from './modules/level.js?v=5';
-import { LearnSystem } from './modules/learn.js?v=5';
-import { UI, setupTouchControls } from './modules/ui.js?v=5';
+} from './modules/physics.js?v=9';
+import { loadLevel, getTotalLevels } from './modules/level.js?v=9';
+import { LearnSystem } from './modules/learn.js?v=9';
+import { UI, setupTouchControls } from './modules/ui.js?v=9';
+import { AudioManager } from './modules/audio.js?v=9';
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// Logische Spielfeldgröße (alle Koordinaten beziehen sich hierauf)
+const GAME_W = 800;
+const GAME_H = 400;
+
+// HiDPI-Canvas: Auflösung an tatsächliche Pixeldichte anpassen
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 // ─── Game State ────────────────────────────────────────────
 const keys = { left: false, right: false, jump: false };
@@ -28,6 +43,7 @@ let levelCompleteTimer = 0;
 // ─── Systeme ───────────────────────────────────────────────
 const ui = new UI(canvas);
 const learnSystem = new LearnSystem();
+const audio = new AudioManager();
 
 // ─── Save / Load ───────────────────────────────────────────
 function saveProgress() {
@@ -63,10 +79,11 @@ function loadProgress() {
 
 // ─── Level laden ───────────────────────────────────────────
 function startLevel(id) {
+  audio.init(); // AudioContext bei erster Interaktion starten
   level = loadLevel(id);
   if (!level) {
-    // Alle Levels geschafft!
     gameState = 'menu';
+    audio.stopMusic();
     return;
   }
   currentLevelId = id;
@@ -74,6 +91,7 @@ function startLevel(id) {
   camera = 0;
   gameState = 'playing';
   levelCompleteTimer = 0;
+  audio.startMusic(level.theme);
 }
 
 function resetAll() {
@@ -81,6 +99,7 @@ function resetAll() {
   score = 0;
   learnSystem.reset();
   saveProgress();
+  audio.stopMusic();
   gameState = 'menu';
 }
 
@@ -123,6 +142,11 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') {
     resetAll();
   }
+  // M = Mute/Unmute
+  if (e.code === 'KeyM') {
+    audio.init();
+    audio.toggleMute();
+  }
 });
 
 document.addEventListener('keyup', (e) => {
@@ -139,7 +163,7 @@ function getLevelBoxes() {
   const gap = 20;
   const cols = Math.min(total, 4);
   const totalW = cols * boxW + (cols - 1) * gap;
-  const startX = (canvas.width - totalW) / 2;
+  const startX = (GAME_W - totalW) / 2;
   const startY = 160;
   const boxes = [];
   for (let i = 0; i < total; i++) {
@@ -158,16 +182,16 @@ function getLevelBoxes() {
 
 function drawLevelSelect() {
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
 
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 28px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Level auswählen', canvas.width / 2, 80);
+  ctx.fillText('Level auswählen', GAME_W / 2, 80);
 
   ctx.fillStyle = '#888';
   ctx.font = '14px sans-serif';
-  ctx.fillText('Tippe auf ein Level oder drücke die Zahl', canvas.width / 2, 115);
+  ctx.fillText('Tippe auf ein Level oder drücke die Zahl', GAME_W / 2, 115);
 
   const boxes = getLevelBoxes();
   for (const box of boxes) {
@@ -210,7 +234,7 @@ function drawLevelSelect() {
   ctx.fillStyle = '#555';
   ctx.font = '13px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('ESC = Zurück', canvas.width / 2, canvas.height - 20);
+  ctx.fillText('ESC = Zurück', GAME_W / 2, GAME_H - 20);
 }
 
 // Touch/Klick auf Canvas
@@ -218,8 +242,8 @@ canvas.addEventListener('click', (e) => {
   if (gameState === 'levelSelect') {
     // Klick-Position relativ zum Canvas berechnen
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = GAME_W / rect.width;
+    const scaleY = GAME_H / rect.height;
     const clickX = (e.clientX - rect.left) * scaleX;
     const clickY = (e.clientY - rect.top) * scaleY;
 
@@ -258,6 +282,14 @@ document.getElementById('btn-levels').addEventListener('click', () => {
   }
 });
 
+// Mute-Button
+const muteBtn = document.getElementById('btn-mute');
+muteBtn.addEventListener('click', () => {
+  audio.init();
+  const muted = audio.toggleMute();
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+});
+
 // ─── Update ────────────────────────────────────────────────
 function update(dt) {
   if (gameState !== 'playing') return;
@@ -271,6 +303,11 @@ function update(dt) {
     player.vy = JUMP_FORCE;
     player.onGround = false;
     learnSystem.checkEventTriggers('jump');
+    if (learnSystem.isShowing) {
+      audio.pauseMusic();
+      learnSystem.onDismiss = () => audio.resumeMusic();
+    }
+    audio.playJump();
   }
 
   // Physik
@@ -283,15 +320,20 @@ function update(dt) {
   const events = resolveCollisions(player, level.platforms);
   for (const evt of events) {
     learnSystem.checkEventTriggers(evt.type);
+    if (learnSystem.isShowing) {
+      audio.pauseMusic();
+      learnSystem.onDismiss = () => audio.resumeMusic();
+    }
+    if (evt.type === 'bounce') audio.playBounce();
   }
 
   // Stickman Animation
   player.update(keys, dt);
 
   // Kamera (Spieler zentrieren, mit Rand)
-  const targetCam = player.x - canvas.width / 3;
+  const targetCam = player.x - GAME_W / 3;
   camera += (targetCam - camera) * 0.08;
-  camera = Math.max(0, Math.min(camera, level.worldWidth - canvas.width));
+  camera = Math.max(0, Math.min(camera, level.worldWidth - GAME_W));
 
   // Coins einsammeln
   for (const coin of level.coins) {
@@ -300,8 +342,9 @@ function update(dt) {
     const dy = (player.y + player.h / 2) - coin.y;
     if (Math.sqrt(dx * dx + dy * dy) < 20) {
       coin.collected = true;
-      coin.collectTime = Date.now(); // Zeitstempel für Animation
+      coin.collectTime = Date.now();
       score += 10;
+      audio.playCoin();
     }
   }
 
@@ -316,7 +359,10 @@ function update(dt) {
       pb.y + pb.h > trigger.y
     ) {
       trigger.triggered = true;
-      learnSystem.triggerFact(trigger.factId);
+      learnSystem.triggerFact(trigger.factId, () => {
+        audio.resumeMusic();
+      });
+      if (learnSystem.isShowing) audio.pauseMusic();
     }
   }
 
@@ -332,6 +378,8 @@ function update(dt) {
     gameState = 'levelComplete';
     score += 100;
     levelCompleteTimer = 0;
+    audio.stopMusic();
+    audio.playLevelComplete();
     // Höchstes freigeschaltetes Level aktualisieren
     if (currentLevelId + 1 > maxLevelUnlocked) {
       maxLevelUnlocked = currentLevelId + 1;
@@ -340,14 +388,21 @@ function update(dt) {
   }
 
   // Spieler fällt aus der Welt
-  if (player.y > canvas.height + 50) {
+  if (player.y > GAME_H + 50) {
     gameState = 'gameOver';
+    audio.stopMusic();
+    audio.playGameOver();
   }
 }
 
 // ─── Render ────────────────────────────────────────────────
 function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // HiDPI: Kontext skalieren, damit 800×400 auf tatsächliche Pixel abgebildet wird
+  const sx = canvas.width / GAME_W;
+  const sy = canvas.height / GAME_H;
+  ctx.setTransform(sx, 0, 0, sy, 0, 0);
+
+  ctx.clearRect(0, 0, GAME_W, GAME_H);
 
   if (gameState === 'menu') {
     drawMenu();
@@ -379,6 +434,8 @@ function render() {
   ctx.translate(-camera, 0);
   if (level.theme === 'walle') {
     player.drawWallE(ctx);
+  } else if (level.theme === 'minecraft') {
+    player.drawSteve(ctx);
   } else {
     player.draw(ctx);
   }
@@ -399,21 +456,21 @@ function render() {
 function drawMenu() {
   // Hintergrund
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
 
   // Titel
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 36px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Stickman Physics', canvas.width / 2, 120);
+  ctx.fillText('Stickman Physics', GAME_W / 2, 120);
 
   // Untertitel
   ctx.fillStyle = '#888';
   ctx.font = '16px sans-serif';
-  ctx.fillText('Lerne Physik durch Spielen!', canvas.width / 2, 160);
+  ctx.fillText('Lerne Physik durch Spielen!', GAME_W / 2, 160);
 
   // Stickman Vorschau
-  const demoStick = new Stickman(canvas.width / 2 - 12, 200);
+  const demoStick = new Stickman(GAME_W / 2 - 12, 200);
   demoStick.draw(ctx);
 
   // Start-Hinweis
@@ -421,66 +478,66 @@ function drawMenu() {
   if (blink) {
     ctx.fillStyle = '#fff';
     ctx.font = '18px sans-serif';
-    ctx.fillText('Drücke ENTER oder tippe zum Starten', canvas.width / 2, 310);
+    ctx.fillText('Drücke ENTER oder tippe zum Starten', GAME_W / 2, 310);
   }
 
   // Steuerung
   ctx.fillStyle = '#555';
   ctx.font = '13px sans-serif';
-  ctx.fillText('← → Laufen  |  ↑ / Leertaste Springen  |  R = Neustart', canvas.width / 2, 350);
-  ctx.fillText(`Level ${currentLevelId}  |  Score: ${score}`, canvas.width / 2, 370);
+  ctx.fillText('← → Laufen  |  ↑ / Leertaste Springen  |  R = Neustart', GAME_W / 2, 350);
+  ctx.fillText(`Level ${currentLevelId}  |  Score: ${score}`, GAME_W / 2, 370);
 
   // Level-Auswahl Hinweis
   ctx.fillStyle = '#888';
   ctx.font = '14px sans-serif';
-  ctx.fillText('L = Level auswählen', canvas.width / 2, 395);
+  ctx.fillText('L = Level auswählen', GAME_W / 2, 395);
 }
 
 function drawGameOver() {
   // Hintergrund
   ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
 
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 32px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Gefallen!', canvas.width / 2, 160);
+  ctx.fillText('Gefallen!', GAME_W / 2, 160);
 
   ctx.fillStyle = '#888';
   ctx.font = '16px sans-serif';
-  ctx.fillText('Versuch es nochmal!', canvas.width / 2, 210);
+  ctx.fillText('Versuch es nochmal!', GAME_W / 2, 210);
 
   const blink = Math.sin(Date.now() / 500) > 0;
   if (blink) {
     ctx.fillStyle = '#fff';
     ctx.font = '16px sans-serif';
-    ctx.fillText('Drücke ENTER oder tippe zum Neustarten', canvas.width / 2, 280);
+    ctx.fillText('Drücke ENTER oder tippe zum Neustarten', GAME_W / 2, 280);
   }
 
   ctx.fillStyle = '#555';
   ctx.font = '13px sans-serif';
-  ctx.fillText('R = Zurück zum Anfang', canvas.width / 2, 330);
+  ctx.fillText('R = Zurück zum Anfang', GAME_W / 2, 330);
 }
 
 function drawLevelComplete() {
   levelCompleteTimer++;
 
   ctx.fillStyle = 'rgba(0,0,0,0.8)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
 
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 28px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Level geschafft!', canvas.width / 2, 150);
+  ctx.fillText('Level geschafft!', GAME_W / 2, 150);
 
   ctx.fillStyle = '#fff';
   ctx.font = '18px sans-serif';
-  ctx.fillText(`+100 Punkte  |  Score: ${score}`, canvas.width / 2, 200);
+  ctx.fillText(`+100 Punkte  |  Score: ${score}`, GAME_W / 2, 200);
 
   // Gelernte Fakten
   ctx.fillStyle = '#888';
   ctx.font = '14px sans-serif';
-  ctx.fillText(`${learnSystem.getLearnedCount()} Physik-Fakten gelernt`, canvas.width / 2, 240);
+  ctx.fillText(`${learnSystem.getLearnedCount()} Physik-Fakten gelernt`, GAME_W / 2, 240);
 
   // Auto-Weiter nach ~3 Sekunden
   if (levelCompleteTimer > 180) {
@@ -493,12 +550,12 @@ function drawLevelComplete() {
       // Alle Levels geschafft
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('Alle Levels geschafft! Du bist ein Physik-Profi!', canvas.width / 2, 300);
+      ctx.fillText('Alle Levels geschafft! Du bist ein Physik-Profi!', GAME_W / 2, 300);
     }
   } else {
     ctx.fillStyle = '#555';
     ctx.font = '13px sans-serif';
-    ctx.fillText('Nächstes Level startet gleich...', canvas.width / 2, 300);
+    ctx.fillText('Nächstes Level startet gleich...', GAME_W / 2, 300);
   }
 }
 

@@ -56,6 +56,21 @@ const FACTS = {
     title: 'Reibung auf Metall',
     text: 'Glatte Metallflächen haben wenig Reibung – fast wie Eis! Wall-Es Ketten helfen ihm, nicht wegzurutschen.',
   },
+  mc_gravity: {
+    icon: '⛏️',
+    title: 'Schwerkraft in Minecraft',
+    text: 'In Minecraft fallen Steine sofort herunter – genau wie in echt! Schwerkraft wirkt auf alles mit Masse.',
+  },
+  mc_sand: {
+    icon: '🏜️',
+    title: 'Sand & Schwerkraft',
+    text: 'Sand fällt in Minecraft nach unten – andere Blöcke nicht! In Wirklichkeit zieht die Schwerkraft alles an.',
+  },
+  mc_slime: {
+    icon: '🟩',
+    title: 'Slime-Block & Elastizität',
+    text: 'Slime-Blöcke sind superelastisch! Sie speichern deine Bewegungsenergie und geben sie als Sprungkraft zurück.',
+  },
 };
 
 export class LearnSystem {
