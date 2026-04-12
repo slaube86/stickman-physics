@@ -41,6 +41,44 @@ export const LEVELS = [
     worldWidth: 1500,
   },
 
+  // Level 6 – Weltraum/Mond
+  {
+    id: 6,
+    name: 'Weltraum/Mond',
+    theme: 'space',
+    spawnX: 100,
+    spawnY: 300,
+    gravity: 0.15, // sehr geringe Schwerkraft
+    platforms: [
+      // Startplattform (Mondboden)
+      { x: 0, y: 370, w: 300, h: 30, surface: 'normal' },
+      // Schwebende Plattformen
+      { x: 200, y: 270, w: 80, h: 15, surface: 'normal' },
+      { x: 350, y: 200, w: 80, h: 15, surface: 'normal' },
+      { x: 500, y: 130, w: 80, h: 15, surface: 'normal' },
+      { x: 650, y: 70,  w: 80, h: 15, surface: 'normal' },
+      { x: 800, y: 120, w: 80, h: 15, surface: 'normal' },
+      { x: 950, y: 200, w: 80, h: 15, surface: 'normal' },
+      // Zielplattform (Mondbasis)
+      { x: 1100, y: 270, w: 120, h: 20, surface: 'normal' },
+    ],
+    coins: [
+      { x: 230, y: 245 },
+      { x: 380, y: 175 },
+      { x: 530, y: 105 },
+      { x: 680, y: 45 },
+      { x: 830, y: 95 },
+      { x: 980, y: 175 },
+    ],
+    learnTriggers: [
+      { x: 120, y: 340, w: 40, h: 40, factId: 'moon_gravity', triggered: false },
+      { x: 700, y: 40, w: 40, h: 40, factId: 'space_jump', triggered: false },
+    ],
+    goal: { x: 1150, y: 240, w: 60, h: 30 },
+    worldWidth: 1300,
+    worldTop: -200, // vertikales Scrolling aktivieren
+  },
+
   // Level 2 – Eishöhle
   {
     id: 2,
@@ -181,60 +219,57 @@ export const LEVELS = [
     worldWidth: 1850,
   },
 
-  // Level 5 – Minecraft: Blöcke & Schwerkraft
+  // Level 5 – Minecraft: Turm nach oben
   {
     id: 5,
-    name: 'Minecraft Welt',
+    name: 'Minecraft Turm',
     theme: 'minecraft',
-    spawnX: 50,
+    spawnX: 250,
     spawnY: 300,
+    worldTop: -700,
     platforms: [
-      // Gras-Boden Start
-      { x: 0,   y: 370, w: 300,  h: 30, surface: 'normal' },
-      // Stufen aus Blöcken (aufsteigend)
-      { x: 320, y: 340, w: 60,  h: 30, surface: 'normal' },
-      { x: 400, y: 310, w: 60,  h: 30, surface: 'normal' },
-      { x: 480, y: 280, w: 60,  h: 30, surface: 'normal' },
-      // Schwebende Plattform
-      { x: 580, y: 240, w: 120, h: 15, surface: 'normal' },
-      // Sand-Bereich (fällt in Minecraft!)
-      { x: 740, y: 370, w: 200, h: 30, surface: 'sand' },
-      { x: 780, y: 310, w: 80,  h: 15, surface: 'sand' },
-      // Lava-Lücke – kein Boden hier!
-      // Obsidian-Brücke
-      { x: 1000, y: 350, w: 60,  h: 15, surface: 'normal' },
-      // Eis (Eisboden wie im Eisbiom)
-      { x: 1100, y: 370, w: 250, h: 30, surface: 'ice' },
-      { x: 1150, y: 310, w: 70,  h: 15, surface: 'ice' },
-      { x: 1260, y: 270, w: 70,  h: 15, surface: 'normal' },
-      // Slime-Block (Trampolin)
-      { x: 1380, y: 365, w: 60,  h: 10, surface: 'trampolin' },
-      // End-Bereich
-      { x: 1480, y: 370, w: 200, h: 30, surface: 'normal' },
-      { x: 1520, y: 310, w: 80,  h: 15, surface: 'normal' },
-      { x: 1640, y: 260, w: 100, h: 15, surface: 'normal' },
+      // Gras-Boden
+      { x: 100, y: 370, w: 600, h: 30, surface: 'normal' },
+
+      // Aufstieg Phase 1 – Blockstufen (zigzag, 80px Abstände)
+      { x: 430, y: 290, w: 150, h: 15, surface: 'normal' },
+      { x: 180, y: 210, w: 160, h: 15, surface: 'normal' },
+      { x: 400, y: 130, w: 180, h: 15, surface: 'sand' },
+      { x: 230, y: 50,  w: 160, h: 15, surface: 'normal' },
+      { x: 400, y: -30, w: 150, h: 15, surface: 'ice' },
+      { x: 180, y: -110, w: 160, h: 15, surface: 'normal' },
+
+      // Slime-Block Boost
+      { x: 400, y: -170, w: 80, h: 10, surface: 'trampolin' },
+
+      // Aufstieg Phase 2 – nach dem Boost
+      { x: 180, y: -270, w: 160, h: 15, surface: 'normal' },
+      { x: 400, y: -350, w: 150, h: 15, surface: 'normal' },
+      { x: 180, y: -400, w: 160, h: 15, surface: 'ice' },
+
+      // Gipfel – Creeper wartet!
+      { x: 330, y: -480, w: 200, h: 15, surface: 'normal' },
     ],
     coins: [
-      { x: 345, y: 315 },
-      { x: 425, y: 285 },
-      { x: 505, y: 255 },
-      { x: 630, y: 215 },
-      { x: 810, y: 285 },
-      { x: 870, y: 345 },
-      { x: 1025, y: 325 },
-      { x: 1180, y: 285 },
-      { x: 1290, y: 245 },
-      { x: 1410, y: 340 },
-      { x: 1560, y: 285 },
-      { x: 1680, y: 235 },
+      { x: 490, y: 265 },
+      { x: 250, y: 185 },
+      { x: 480, y: 105 },
+      { x: 230, y: 25 },
+      { x: 460, y: -55 },
+      { x: 250, y: -135 },
+      { x: 430, y: -195 },
+      { x: 250, y: -295 },
+      { x: 460, y: -375 },
+      { x: 250, y: -455 },
+      { x: 420, y: -505 },
     ],
     learnTriggers: [
-      { x: 490, y: 250, w: 40, h: 40, factId: 'mc_gravity', triggered: false },
-      { x: 745, y: 330, w: 40, h: 40, factId: 'mc_sand', triggered: false },
-      { x: 1390, y: 330, w: 40, h: 40, factId: 'mc_slime', triggered: false },
+      { x: 220, y: 20, w: 40, h: 40, factId: 'mc_gravity', triggered: false },
+      { x: 410, y: -200, w: 40, h: 40, factId: 'mc_slime', triggered: false },
+      { x: 190, y: -460, w: 40, h: 40, factId: 'mc_sand', triggered: false },
     ],
-    goal: { x: 1650, y: 230, w: 60, h: 30 },
-    worldWidth: 1800,
+    goal: { x: 390, y: -510, w: 60, h: 30 },
+    worldWidth: 800,
   },
 ];
 

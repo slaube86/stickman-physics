@@ -17,8 +17,26 @@ export class UI {
 
   // Hintergrund zeichnen – rein schwarz
   drawBackground(ctx, camera, theme) {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, GAME_W, GAME_H);
+    if (theme === 'space') {
+      // Dunkelblauer Space-Hintergrund
+      ctx.fillStyle = '#081024';
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // Sterne
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      for (let i = 0; i < 60; i++) {
+        const sx = (i * 131) % GAME_W;
+        const sy = ((i * 71) % GAME_H);
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.random() * 1.2 + 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+      }
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+    }
   }
 
   // Plattformen zeichnen – nur dünne weiße Linien

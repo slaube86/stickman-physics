@@ -71,6 +71,16 @@ const FACTS = {
     title: 'Slime-Block & Elastizität',
     text: 'Slime-Blöcke sind superelastisch! Sie speichern deine Bewegungsenergie und geben sie als Sprungkraft zurück.',
   },
+  moon_gravity: {
+    icon: '🌙',
+    title: 'Mond-Schwerkraft',
+    text: 'Auf dem Mond ist die Schwerkraft viel schwächer als auf der Erde. Deshalb kannst du dort viel höher und weiter springen!',
+  },
+  space_jump: {
+    icon: '🚀',
+    title: 'Springen im All',
+    text: 'Im Weltraum gibt es fast keine Schwerkraft. Astronauten schweben und bewegen sich mit kleinen Stößen fort!',
+  },
 };
 
 export class LearnSystem {

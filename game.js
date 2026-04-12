@@ -1,14 +1,14 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from './modules/stickman.js?v=9';
+import { Stickman } from './modules/stickman.js?v=16';
 import {
   applyGravity, applyMovement, applyFriction, applyPosition,
   resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js?v=9';
-import { loadLevel, getTotalLevels } from './modules/level.js?v=9';
-import { LearnSystem } from './modules/learn.js?v=9';
-import { UI, setupTouchControls } from './modules/ui.js?v=9';
-import { AudioManager } from './modules/audio.js?v=9';
+} from './modules/physics.js?v=16';
+import { loadLevel, getTotalLevels } from './modules/level.js?v=16';
+import { LearnSystem } from './modules/learn.js?v=16';
+import { UI, setupTouchControls } from './modules/ui.js?v=16';
+import { AudioManager } from './modules/audio.js?v=16';
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
@@ -35,6 +35,7 @@ let maxLevelUnlocked = 1;
 let level = null;
 let player = null;
 let camera = 0;
+let cameraY = 0;
 let score = 0;
 let gameState = 'menu'; // menu, playing, levelSelect, levelComplete, gameOver
 let lastTime = 0;
@@ -89,6 +90,7 @@ function startLevel(id) {
   currentLevelId = id;
   player = new Stickman(level.spawnX, level.spawnY);
   camera = 0;
+  cameraY = 0;
   gameState = 'playing';
   levelCompleteTimer = 0;
   audio.startMusic(level.theme);
@@ -311,7 +313,9 @@ function update(dt) {
   }
 
   // Physik
-  applyGravity(player);
+  // Level-spezifische Schwerkraft (z.B. Mond/Space)
+  const gravity = level.gravity !== undefined ? level.gravity : undefined;
+  applyGravity(player, gravity);
   const surface = getCurrentSurface(player, level.platforms);
   applyFriction(player, surface);
   applyPosition(player);
@@ -334,6 +338,19 @@ function update(dt) {
   const targetCam = player.x - GAME_W / 3;
   camera += (targetCam - camera) * 0.08;
   camera = Math.max(0, Math.min(camera, level.worldWidth - GAME_W));
+
+  // Vertikale Kamera (Turm & Space-Level mit Ziel-Fokus)
+  if (level.worldTop !== undefined) {
+    let targetCamY;
+    // Space-Level: Kamera fährt nach unten, wenn Spieler in Zielnähe
+    if (level.theme === 'space' && player.y > 220) {
+      targetCamY = 0; // Fokus auf Boden/Ziel
+    } else {
+      targetCamY = player.y - GAME_H * 0.65;
+    }
+    cameraY += (targetCamY - cameraY) * 0.08;
+    cameraY = Math.max(level.worldTop, Math.min(0, cameraY));
+  }
 
   // Coins einsammeln
   for (const coin of level.coins) {
@@ -380,6 +397,8 @@ function update(dt) {
     levelCompleteTimer = 0;
     audio.stopMusic();
     audio.playLevelComplete();
+    // Kamera sofort auf Standardposition zurücksetzen (Y=0)
+    cameraY = 0;
     // Höchstes freigeschaltetes Level aktualisieren
     if (currentLevelId + 1 > maxLevelUnlocked) {
       maxLevelUnlocked = currentLevelId + 1;
@@ -424,6 +443,7 @@ function render() {
 
   // Level-Elemente
   ctx.save();
+  ctx.translate(0, -cameraY);
   ui.drawPlatforms(ctx, level.platforms, camera);
   ui.drawCoins(ctx, level.coins, camera);
   ui.drawLearnTriggers(ctx, level.learnTriggers, camera);
@@ -436,11 +456,11 @@ function render() {
     player.drawWallE(ctx);
   } else if (level.theme === 'minecraft') {
     player.drawSteve(ctx);
+  } else if (level.theme === 'space') {
+    player.drawSpace(ctx);
   } else {
     player.draw(ctx);
   }
-  ctx.restore();
-
   ctx.restore();
 
   // HUD
@@ -449,6 +469,11 @@ function render() {
 
   // Level Complete Overlay
   if (gameState === 'levelComplete') {
+    // Transformation zurücksetzen und wieder auf HiDPI skalieren
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const sx = canvas.width / GAME_W;
+    const sy = canvas.height / GAME_H;
+    ctx.scale(sx, sy);
     drawLevelComplete();
   }
 }
@@ -525,19 +550,23 @@ function drawLevelComplete() {
   ctx.fillStyle = 'rgba(0,0,0,0.8)';
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
+
+  // Overlay immer mittig im Canvas anzeigen (ohne Kamera-Offset)
+  let overlayY = 0;
+
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 28px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Level geschafft!', GAME_W / 2, 150);
+  ctx.fillText('Level geschafft!', GAME_W / 2, 150 + overlayY);
 
   ctx.fillStyle = '#fff';
   ctx.font = '18px sans-serif';
-  ctx.fillText(`+100 Punkte  |  Score: ${score}`, GAME_W / 2, 200);
+  ctx.fillText(`+100 Punkte  |  Score: ${score}`, GAME_W / 2, 200 + overlayY);
 
   // Gelernte Fakten
   ctx.fillStyle = '#888';
   ctx.font = '14px sans-serif';
-  ctx.fillText(`${learnSystem.getLearnedCount()} Physik-Fakten gelernt`, GAME_W / 2, 240);
+  ctx.fillText(`${learnSystem.getLearnedCount()} Physik-Fakten gelernt`, GAME_W / 2, 240 + overlayY);
 
   // Auto-Weiter nach ~3 Sekunden
   if (levelCompleteTimer > 180) {
@@ -550,12 +579,12 @@ function drawLevelComplete() {
       // Alle Levels geschafft
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('Alle Levels geschafft! Du bist ein Physik-Profi!', GAME_W / 2, 300);
+      ctx.fillText('Alle Levels geschafft! Du bist ein Physik-Profi!', GAME_W / 2, 300 + overlayY);
     }
   } else {
     ctx.fillStyle = '#555';
     ctx.font = '13px sans-serif';
-    ctx.fillText('Nächstes Level startet gleich...', GAME_W / 2, 300);
+    ctx.fillText('Nächstes Level startet gleich...', GAME_W / 2, 300 + overlayY);
   }
 }
 

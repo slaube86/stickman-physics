@@ -1,6 +1,6 @@
 // physics.js – Physik-Engine: Schwerkraft, Reibung, Kollision
 
-export const GRAVITY = 0.5;
+export const DEFAULT_GRAVITY = 0.5;
 export const JUMP_FORCE = -9.5;
 export const MAX_SPEED = 3.5;
 export const ACCELERATION = 0.7;
@@ -13,8 +13,9 @@ export const SURFACES = {
   trampolin: { friction: 0.70, bounce: 1.3, label: 'Trampolin' }
 };
 
-export function applyGravity(player) {
-  player.vy += GRAVITY;
+// applyGravity kann jetzt einen individuellen Wert bekommen
+export function applyGravity(player, gravity = DEFAULT_GRAVITY) {
+  player.vy += gravity;
 }
 
 export function applyMovement(player, keys) {
@@ -119,8 +120,8 @@ export function kineticEnergy(mass, vx, vy) {
 /**
  * Potenzielle Energie: E = m * g * h
  */
-export function potentialEnergy(mass, height) {
-  return mass * GRAVITY * Math.max(0, height);
+export function potentialEnergy(mass, height, gravity = DEFAULT_GRAVITY) {
+  return mass * gravity * Math.max(0, height);
 }
 
 /**
