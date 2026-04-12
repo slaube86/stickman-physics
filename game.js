@@ -1,14 +1,14 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from './modules/stickman.js?v=16';
+import { Stickman } from './modules/stickman.js?v=18';
 import {
   applyGravity, applyMovement, applyFriction, applyPosition,
   resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js?v=16';
-import { loadLevel, getTotalLevels } from './modules/level.js?v=16';
-import { LearnSystem } from './modules/learn.js?v=16';
-import { UI, setupTouchControls } from './modules/ui.js?v=16';
-import { AudioManager } from './modules/audio.js?v=16';
+} from './modules/physics.js?v=18';
+import { loadLevel, getTotalLevels } from './modules/level.js?v=18';
+import { LearnSystem } from './modules/learn.js?v=18';
+import { UI, setupTouchControls } from './modules/ui.js?v=18';
+import { AudioManager } from './modules/audio.js?v=18';
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
@@ -397,8 +397,10 @@ function update(dt) {
     levelCompleteTimer = 0;
     audio.stopMusic();
     audio.playLevelComplete();
-    // Kamera sofort auf Standardposition zurücksetzen (Y=0)
-    cameraY = 0;
+    // Kamera nur im Space-Level zurücksetzen
+    if (level.theme === 'space') {
+      cameraY = 0;
+    }
     // Höchstes freigeschaltetes Level aktualisieren
     if (currentLevelId + 1 > maxLevelUnlocked) {
       maxLevelUnlocked = currentLevelId + 1;
@@ -439,7 +441,7 @@ function render() {
   }
 
   // Hintergrund
-  ui.drawBackground(ctx, camera, level.theme);
+  ui.drawBackground(ctx, camera, level.theme, level);
 
   // Level-Elemente
   ctx.save();

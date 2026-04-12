@@ -49,6 +49,7 @@ export const LEVELS = [
     spawnX: 100,
     spawnY: 300,
     gravity: 0.15, // sehr geringe Schwerkraft
+    starField: { count: 80, minR: 0.5, maxR: 1.8 }, // für zufällige Sterne
     platforms: [
       // Startplattform (Mondboden)
       { x: 0, y: 370, w: 300, h: 30, surface: 'normal' },

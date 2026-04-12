@@ -15,20 +15,28 @@ export class UI {
     this.levelDisplay.textContent = levelName;
   }
 
-  // Hintergrund zeichnen – rein schwarz
-  drawBackground(ctx, camera, theme) {
+  // Hintergrund zeichnen – Space: schwarz + zufällige Sterne
+  drawBackground(ctx, camera, theme, level) {
     if (theme === 'space') {
-      // Dunkelblauer Space-Hintergrund
-      ctx.fillStyle = '#081024';
+      ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, GAME_W, GAME_H);
-      // Sterne
+      // Sterne: einmalig pro Levelstart generieren
+      if (!level._starField) {
+        const count = (level.starField && level.starField.count) || 80;
+        const minR = (level.starField && level.starField.minR) || 0.5;
+        const maxR = (level.starField && level.starField.maxR) || 1.8;
+        level._starField = Array.from({length: count}, () => ({
+          x: Math.random() * GAME_W,
+          y: Math.random() * GAME_H,
+          r: Math.random() * (maxR - minR) + minR,
+          a: Math.random() * 0.5 + 0.5
+        }));
+      }
       ctx.save();
-      ctx.globalAlpha = 0.7;
-      for (let i = 0; i < 60; i++) {
-        const sx = (i * 131) % GAME_W;
-        const sy = ((i * 71) % GAME_H);
+      for (const star of level._starField) {
+        ctx.globalAlpha = star.a;
         ctx.beginPath();
-        ctx.arc(sx, sy, Math.random() * 1.2 + 0.5, 0, Math.PI * 2);
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
         ctx.fillStyle = '#fff';
         ctx.fill();
       }
