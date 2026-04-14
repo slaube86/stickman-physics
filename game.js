@@ -1,18 +1,23 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from './modules/stickman.js?v=18';
+import { Stickman } from "./modules/stickman.js?v=18";
 import {
-  applyGravity, applyMovement, applyFriction, applyPosition,
-  resolveCollisions, getCurrentSurface, JUMP_FORCE
-} from './modules/physics.js?v=18';
-import { loadLevel, getTotalLevels } from './modules/level.js?v=18';
-import { LearnSystem } from './modules/learn.js?v=18';
-import { UI, setupTouchControls } from './modules/ui.js?v=18';
-import { AudioManager } from './modules/audio.js?v=18';
+  applyGravity,
+  applyMovement,
+  applyFriction,
+  applyPosition,
+  resolveCollisions,
+  getCurrentSurface,
+  JUMP_FORCE,
+} from "./modules/physics.js?v=18";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=18";
+import { LearnSystem } from "./modules/learn.js?v=18";
+import { UI, setupTouchControls } from "./modules/ui.js?v=18";
+import { AudioManager } from "./modules/audio.js?v=18";
 
 // ─── Canvas Setup ──────────────────────────────────────────
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
 // Logische Spielfeldgröße (alle Koordinaten beziehen sich hierauf)
 const GAME_W = 800;
@@ -25,7 +30,7 @@ function resizeCanvas() {
   canvas.width = Math.round(rect.width * dpr);
   canvas.height = Math.round(rect.height * dpr);
 }
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 // ─── Game State ────────────────────────────────────────────
@@ -37,7 +42,7 @@ let player = null;
 let camera = 0;
 let cameraY = 0;
 let score = 0;
-let gameState = 'menu'; // menu, playing, levelSelect, levelComplete, gameOver
+let gameState = "menu"; // menu, playing, levelSelect, levelComplete, gameOver
 let lastTime = 0;
 let levelCompleteTimer = 0;
 
@@ -55,7 +60,7 @@ function saveProgress() {
     factsLearned: [...learnSystem.shownFacts],
   };
   try {
-    localStorage.setItem('stickmanSave', JSON.stringify(data));
+    localStorage.setItem("stickmanSave", JSON.stringify(data));
   } catch {
     // localStorage nicht verfügbar, ignorieren
   }
@@ -63,14 +68,14 @@ function saveProgress() {
 
 function loadProgress() {
   try {
-    const raw = localStorage.getItem('stickmanSave');
+    const raw = localStorage.getItem("stickmanSave");
     if (raw) {
       const data = JSON.parse(raw);
       currentLevelId = data.level || 1;
       maxLevelUnlocked = data.maxLevel || data.level || 1;
       score = data.score || 0;
       if (data.factsLearned) {
-        data.factsLearned.forEach(f => learnSystem.shownFacts.add(f));
+        data.factsLearned.forEach((f) => learnSystem.shownFacts.add(f));
       }
     }
   } catch {
@@ -83,7 +88,7 @@ function startLevel(id) {
   audio.init(); // AudioContext bei erster Interaktion starten
   level = loadLevel(id);
   if (!level) {
-    gameState = 'menu';
+    gameState = "menu";
     audio.stopMusic();
     return;
   }
@@ -91,7 +96,7 @@ function startLevel(id) {
   player = new Stickman(level.spawnX, level.spawnY);
   camera = 0;
   cameraY = 0;
-  gameState = 'playing';
+  gameState = "playing";
   levelCompleteTimer = 0;
   audio.startMusic(level.theme);
 }
@@ -102,59 +107,60 @@ function resetAll() {
   learnSystem.reset();
   saveProgress();
   audio.stopMusic();
-  gameState = 'menu';
+  gameState = "menu";
 }
 
 // ─── Input ─────────────────────────────────────────────────
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+document.addEventListener("keydown", (e) => {
+  if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = true;
+  if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = true;
+  if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
     e.preventDefault();
     keys.jump = true;
   }
   // Menü: Enter zum Starten
-  if (e.code === 'Enter' || e.code === 'Space') {
-    if (gameState === 'menu') {
+  if (e.code === "Enter" || e.code === "Space") {
+    if (gameState === "menu") {
       startLevel(currentLevelId);
-    } else if (gameState === 'gameOver') {
+    } else if (gameState === "gameOver") {
       startLevel(currentLevelId);
     }
   }
   // L = Level-Auswahl
-  if (e.code === 'KeyL') {
-    if (gameState === 'menu' || gameState === 'playing') {
-      gameState = 'levelSelect';
+  if (e.code === "KeyL") {
+    if (gameState === "menu" || gameState === "playing") {
+      gameState = "levelSelect";
     }
   }
   // Escape = Zurück zum Menü
-  if (e.code === 'Escape') {
-    if (gameState === 'levelSelect') {
-      gameState = 'menu';
+  if (e.code === "Escape") {
+    if (gameState === "levelSelect") {
+      gameState = "menu";
     }
   }
   // Zahlen 1-9 in Level-Auswahl
-  if (gameState === 'levelSelect') {
+  if (gameState === "levelSelect") {
     const num = parseInt(e.key);
     if (num >= 1 && num <= maxLevelUnlocked && num <= getTotalLevels()) {
       startLevel(num);
     }
   }
   // R = Kompletter Neustart
-  if (e.code === 'KeyR') {
+  if (e.code === "KeyR") {
     resetAll();
   }
   // M = Mute/Unmute
-  if (e.code === 'KeyM') {
+  if (e.code === "KeyM") {
     audio.init();
     audio.toggleMute();
   }
 });
 
-document.addEventListener('keyup', (e) => {
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
-  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.jump = false;
+document.addEventListener("keyup", (e) => {
+  if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = false;
+  if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = false;
+  if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW")
+    keys.jump = false;
 });
 
 // ─── Level-Select: Box-Positionen berechnen ───────────────
@@ -183,17 +189,17 @@ function getLevelBoxes() {
 }
 
 function drawLevelSelect() {
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 28px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Level auswählen', GAME_W / 2, 80);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Level auswählen", GAME_W / 2, 80);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '14px sans-serif';
-  ctx.fillText('Tippe auf ein Level oder drücke die Zahl', GAME_W / 2, 115);
+  ctx.fillStyle = "#888";
+  ctx.font = "14px sans-serif";
+  ctx.fillText("Tippe auf ein Level oder drücke die Zahl", GAME_W / 2, 115);
 
   const boxes = getLevelBoxes();
   for (const box of boxes) {
@@ -201,47 +207,47 @@ function drawLevelSelect() {
     const completed = box.id < maxLevelUnlocked;
 
     // Box
-    ctx.strokeStyle = unlocked ? '#fff' : '#444';
+    ctx.strokeStyle = unlocked ? "#fff" : "#444";
     ctx.lineWidth = unlocked ? 1.5 : 1;
     ctx.strokeRect(box.x, box.y, box.w, box.h);
 
     // Level-Nummer
-    ctx.fillStyle = unlocked ? '#fff' : '#444';
-    ctx.font = 'bold 24px sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = unlocked ? "#fff" : "#444";
+    ctx.font = "bold 24px sans-serif";
+    ctx.textAlign = "center";
     ctx.fillText(box.id, box.x + box.w / 2, box.y + 35);
 
     // Level-Name
     const lvlData = loadLevel(box.id);
     if (lvlData) {
-      ctx.font = '11px sans-serif';
+      ctx.font = "11px sans-serif";
       ctx.fillText(lvlData.name, box.x + box.w / 2, box.y + 55);
     }
 
     // Haken bei abgeschlossenen Levels
     if (completed) {
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('✓', box.x + box.w / 2, box.y + 75);
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px sans-serif";
+      ctx.fillText("✓", box.x + box.w / 2, box.y + 75);
     }
 
     // Schloss bei gesperrten Levels
     if (!unlocked) {
-      ctx.fillStyle = '#444';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('🔒', box.x + box.w / 2, box.y + 75);
+      ctx.fillStyle = "#444";
+      ctx.font = "16px sans-serif";
+      ctx.fillText("🔒", box.x + box.w / 2, box.y + 75);
     }
   }
 
-  ctx.fillStyle = '#555';
-  ctx.font = '13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('ESC = Zurück', GAME_W / 2, GAME_H - 20);
+  ctx.fillStyle = "#555";
+  ctx.font = "13px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("ESC = Zurück", GAME_W / 2, GAME_H - 20);
 }
 
 // Touch/Klick auf Canvas
-canvas.addEventListener('click', (e) => {
-  if (gameState === 'levelSelect') {
+canvas.addEventListener("click", (e) => {
+  if (gameState === "levelSelect") {
     // Klick-Position relativ zum Canvas berechnen
     const rect = canvas.getBoundingClientRect();
     const scaleX = GAME_W / rect.width;
@@ -252,8 +258,10 @@ canvas.addEventListener('click', (e) => {
     const boxes = getLevelBoxes();
     for (const box of boxes) {
       if (
-        clickX >= box.x && clickX <= box.x + box.w &&
-        clickY >= box.y && clickY <= box.y + box.h &&
+        clickX >= box.x &&
+        clickX <= box.x + box.w &&
+        clickY >= box.y &&
+        clickY <= box.y + box.h &&
         box.id <= maxLevelUnlocked
       ) {
         startLevel(box.id);
@@ -263,7 +271,7 @@ canvas.addEventListener('click', (e) => {
     return;
   }
 
-  if (gameState === 'menu' || gameState === 'gameOver') {
+  if (gameState === "menu" || gameState === "gameOver") {
     startLevel(currentLevelId);
   }
 });
@@ -271,30 +279,30 @@ canvas.addEventListener('click', (e) => {
 setupTouchControls(keys);
 
 // Touch Reset-Button
-document.getElementById('btn-reset').addEventListener('click', () => {
+document.getElementById("btn-reset").addEventListener("click", () => {
   resetAll();
 });
 
 // Touch Level-Select Button
-document.getElementById('btn-levels').addEventListener('click', () => {
-  if (gameState === 'levelSelect') {
-    gameState = 'menu';
+document.getElementById("btn-levels").addEventListener("click", () => {
+  if (gameState === "levelSelect") {
+    gameState = "menu";
   } else {
-    gameState = 'levelSelect';
+    gameState = "levelSelect";
   }
 });
 
 // Mute-Button
-const muteBtn = document.getElementById('btn-mute');
-muteBtn.addEventListener('click', () => {
+const muteBtn = document.getElementById("btn-mute");
+muteBtn.addEventListener("click", () => {
   audio.init();
   const muted = audio.toggleMute();
-  muteBtn.textContent = muted ? '🔇' : '🔊';
+  muteBtn.textContent = muted ? "🔇" : "🔊";
 });
 
 // ─── Update ────────────────────────────────────────────────
 function update(dt) {
-  if (gameState !== 'playing') return;
+  if (gameState !== "playing") return;
   if (learnSystem.isShowing) return; // Pause bei Lernkarte
 
   // Bewegung
@@ -304,7 +312,7 @@ function update(dt) {
   if (keys.jump && player.onGround) {
     player.vy = JUMP_FORCE;
     player.onGround = false;
-    learnSystem.checkEventTriggers('jump');
+    learnSystem.checkEventTriggers("jump");
     if (learnSystem.isShowing) {
       audio.pauseMusic();
       learnSystem.onDismiss = () => audio.resumeMusic();
@@ -328,7 +336,7 @@ function update(dt) {
       audio.pauseMusic();
       learnSystem.onDismiss = () => audio.resumeMusic();
     }
-    if (evt.type === 'bounce') audio.playBounce();
+    if (evt.type === "bounce") audio.playBounce();
   }
 
   // Stickman Animation
@@ -343,7 +351,7 @@ function update(dt) {
   if (level.worldTop !== undefined) {
     let targetCamY;
     // Space-Level: Kamera fährt nach unten, wenn Spieler in Zielnähe
-    if (level.theme === 'space' && player.y > 220) {
+    if (level.theme === "space" && player.y > 220) {
       targetCamY = 0; // Fokus auf Boden/Ziel
     } else {
       targetCamY = player.y - GAME_H * 0.65;
@@ -355,8 +363,8 @@ function update(dt) {
   // Coins einsammeln
   for (const coin of level.coins) {
     if (coin.collected) continue;
-    const dx = (player.x + player.w / 2) - coin.x;
-    const dy = (player.y + player.h / 2) - coin.y;
+    const dx = player.x + player.w / 2 - coin.x;
+    const dy = player.y + player.h / 2 - coin.y;
     if (Math.sqrt(dx * dx + dy * dy) < 20) {
       coin.collected = true;
       coin.collectTime = Date.now();
@@ -392,13 +400,13 @@ function update(dt) {
     pb.y < goal.y + goal.h &&
     pb.y + pb.h > goal.y
   ) {
-    gameState = 'levelComplete';
+    gameState = "levelComplete";
     score += 100;
     levelCompleteTimer = 0;
     audio.stopMusic();
     audio.playLevelComplete();
     // Kamera nur im Space-Level zurücksetzen
-    if (level.theme === 'space') {
+    if (level.theme === "space") {
       cameraY = 0;
     }
     // Höchstes freigeschaltetes Level aktualisieren
@@ -410,7 +418,7 @@ function update(dt) {
 
   // Spieler fällt aus der Welt
   if (player.y > GAME_H + 50) {
-    gameState = 'gameOver';
+    gameState = "gameOver";
     audio.stopMusic();
     audio.playGameOver();
   }
@@ -425,17 +433,17 @@ function render() {
 
   ctx.clearRect(0, 0, GAME_W, GAME_H);
 
-  if (gameState === 'menu') {
+  if (gameState === "menu") {
     drawMenu();
     return;
   }
 
-  if (gameState === 'levelSelect') {
+  if (gameState === "levelSelect") {
     drawLevelSelect();
     return;
   }
 
-  if (gameState === 'gameOver') {
+  if (gameState === "gameOver") {
     drawGameOver();
     return;
   }
@@ -454,12 +462,14 @@ function render() {
   // Stickman zeichnen (relativ zur Kamera)
   ctx.save();
   ctx.translate(-camera, 0);
-  if (level.theme === 'walle') {
+  if (level.theme === "walle") {
     player.drawWallE(ctx);
-  } else if (level.theme === 'minecraft') {
+  } else if (level.theme === "minecraft") {
     player.drawSteve(ctx);
-  } else if (level.theme === 'space') {
+  } else if (level.theme === "space") {
     player.drawSpace(ctx);
+  } else if (level.theme === "ninjago") {
+    player.drawNinja(ctx);
   } else {
     player.draw(ctx);
   }
@@ -470,7 +480,7 @@ function render() {
   ui.drawPhysicsInfo(ctx, player);
 
   // Level Complete Overlay
-  if (gameState === 'levelComplete') {
+  if (gameState === "levelComplete") {
     // Transformation zurücksetzen und wieder auf HiDPI skalieren
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const sx = canvas.width / GAME_W;
@@ -482,19 +492,19 @@ function render() {
 
 function drawMenu() {
   // Hintergrund
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
   // Titel
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 36px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Stickman Physics', GAME_W / 2, 120);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 36px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Stickman Physics", GAME_W / 2, 120);
 
   // Untertitel
-  ctx.fillStyle = '#888';
-  ctx.font = '16px sans-serif';
-  ctx.fillText('Lerne Physik durch Spielen!', GAME_W / 2, 160);
+  ctx.fillStyle = "#888";
+  ctx.font = "16px sans-serif";
+  ctx.fillText("Lerne Physik durch Spielen!", GAME_W / 2, 160);
 
   // Stickman Vorschau
   const demoStick = new Stickman(GAME_W / 2 - 12, 200);
@@ -503,72 +513,79 @@ function drawMenu() {
   // Start-Hinweis
   const blink = Math.sin(Date.now() / 500) > 0;
   if (blink) {
-    ctx.fillStyle = '#fff';
-    ctx.font = '18px sans-serif';
-    ctx.fillText('Drücke ENTER oder tippe zum Starten', GAME_W / 2, 310);
+    ctx.fillStyle = "#fff";
+    ctx.font = "18px sans-serif";
+    ctx.fillText("Drücke ENTER oder tippe zum Starten", GAME_W / 2, 310);
   }
 
   // Steuerung
-  ctx.fillStyle = '#555';
-  ctx.font = '13px sans-serif';
-  ctx.fillText('← → Laufen  |  ↑ / Leertaste Springen  |  R = Neustart', GAME_W / 2, 350);
+  ctx.fillStyle = "#555";
+  ctx.font = "13px sans-serif";
+  ctx.fillText(
+    "← → Laufen  |  ↑ / Leertaste Springen  |  R = Neustart",
+    GAME_W / 2,
+    350,
+  );
   ctx.fillText(`Level ${currentLevelId}  |  Score: ${score}`, GAME_W / 2, 370);
 
   // Level-Auswahl Hinweis
-  ctx.fillStyle = '#888';
-  ctx.font = '14px sans-serif';
-  ctx.fillText('L = Level auswählen', GAME_W / 2, 395);
+  ctx.fillStyle = "#888";
+  ctx.font = "14px sans-serif";
+  ctx.fillText("L = Level auswählen", GAME_W / 2, 395);
 }
 
 function drawGameOver() {
   // Hintergrund
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+  ctx.fillStyle = "rgba(0, 0, 0, 0.95)";
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 32px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Gefallen!', GAME_W / 2, 160);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 32px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Gefallen!", GAME_W / 2, 160);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '16px sans-serif';
-  ctx.fillText('Versuch es nochmal!', GAME_W / 2, 210);
+  ctx.fillStyle = "#888";
+  ctx.font = "16px sans-serif";
+  ctx.fillText("Versuch es nochmal!", GAME_W / 2, 210);
 
   const blink = Math.sin(Date.now() / 500) > 0;
   if (blink) {
-    ctx.fillStyle = '#fff';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Drücke ENTER oder tippe zum Neustarten', GAME_W / 2, 280);
+    ctx.fillStyle = "#fff";
+    ctx.font = "16px sans-serif";
+    ctx.fillText("Drücke ENTER oder tippe zum Neustarten", GAME_W / 2, 280);
   }
 
-  ctx.fillStyle = '#555';
-  ctx.font = '13px sans-serif';
-  ctx.fillText('R = Zurück zum Anfang', GAME_W / 2, 330);
+  ctx.fillStyle = "#555";
+  ctx.font = "13px sans-serif";
+  ctx.fillText("R = Zurück zum Anfang", GAME_W / 2, 330);
 }
 
 function drawLevelComplete() {
   levelCompleteTimer++;
 
-  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+  ctx.fillStyle = "rgba(0,0,0,0.8)";
   ctx.fillRect(0, 0, GAME_W, GAME_H);
-
 
   // Overlay immer mittig im Canvas anzeigen (ohne Kamera-Offset)
   let overlayY = 0;
 
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 28px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Level geschafft!', GAME_W / 2, 150 + overlayY);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Level geschafft!", GAME_W / 2, 150 + overlayY);
 
-  ctx.fillStyle = '#fff';
-  ctx.font = '18px sans-serif';
+  ctx.fillStyle = "#fff";
+  ctx.font = "18px sans-serif";
   ctx.fillText(`+100 Punkte  |  Score: ${score}`, GAME_W / 2, 200 + overlayY);
 
   // Gelernte Fakten
-  ctx.fillStyle = '#888';
-  ctx.font = '14px sans-serif';
-  ctx.fillText(`${learnSystem.getLearnedCount()} Physik-Fakten gelernt`, GAME_W / 2, 240 + overlayY);
+  ctx.fillStyle = "#888";
+  ctx.font = "14px sans-serif";
+  ctx.fillText(
+    `${learnSystem.getLearnedCount()} Physik-Fakten gelernt`,
+    GAME_W / 2,
+    240 + overlayY,
+  );
 
   // Auto-Weiter nach ~3 Sekunden
   if (levelCompleteTimer > 180) {
@@ -579,14 +596,22 @@ function drawLevelComplete() {
       startLevel(nextId);
     } else {
       // Alle Levels geschafft
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('Alle Levels geschafft! Du bist ein Physik-Profi!', GAME_W / 2, 300 + overlayY);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 20px sans-serif";
+      ctx.fillText(
+        "Alle Levels geschafft! Du bist ein Physik-Profi!",
+        GAME_W / 2,
+        300 + overlayY,
+      );
     }
   } else {
-    ctx.fillStyle = '#555';
-    ctx.font = '13px sans-serif';
-    ctx.fillText('Nächstes Level startet gleich...', GAME_W / 2, 300 + overlayY);
+    ctx.fillStyle = "#555";
+    ctx.font = "13px sans-serif";
+    ctx.fillText(
+      "Nächstes Level startet gleich...",
+      GAME_W / 2,
+      300 + overlayY,
+    );
   }
 }
 

@@ -6,8 +6,8 @@ const GAME_H = 400;
 export class UI {
   constructor(canvas) {
     this.canvas = canvas;
-    this.scoreDisplay = document.getElementById('score-display');
-    this.levelDisplay = document.getElementById('level-display');
+    this.scoreDisplay = document.getElementById("score-display");
+    this.levelDisplay = document.getElementById("level-display");
   }
 
   updateHUD(score, levelName) {
@@ -17,19 +17,19 @@ export class UI {
 
   // Hintergrund zeichnen – Space: schwarz + zufällige Sterne
   drawBackground(ctx, camera, theme, level) {
-    if (theme === 'space') {
-      ctx.fillStyle = '#000';
+    if (theme === "space") {
+      ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, GAME_W, GAME_H);
       // Sterne: einmalig pro Levelstart generieren
       if (!level._starField) {
         const count = (level.starField && level.starField.count) || 80;
         const minR = (level.starField && level.starField.minR) || 0.5;
         const maxR = (level.starField && level.starField.maxR) || 1.8;
-        level._starField = Array.from({length: count}, () => ({
+        level._starField = Array.from({ length: count }, () => ({
           x: Math.random() * GAME_W,
           y: Math.random() * GAME_H,
           r: Math.random() * (maxR - minR) + minR,
-          a: Math.random() * 0.5 + 0.5
+          a: Math.random() * 0.5 + 0.5,
         }));
       }
       ctx.save();
@@ -37,19 +37,63 @@ export class UI {
         ctx.globalAlpha = star.a;
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = "#fff";
         ctx.fill();
       }
       ctx.restore();
+    } else if (theme === "ninjago") {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Mondscheibe (statisch, dekorativ)
+      ctx.save();
+      ctx.globalAlpha = 0.13;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(640, 72, 52, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Pagoden-Silhouetten im Hintergrund (Parallax)
+      const parallax = camera * 0.25;
+      ctx.save();
+      ctx.globalAlpha = 0.09;
+      ctx.fillStyle = "#fff";
+
+      const drawPagodaSil = (px, baseY) => {
+        const sx = px - parallax;
+        if (sx < -160 || sx > GAME_W + 160) return;
+        // Turm-Körper
+        ctx.fillRect(sx - 10, baseY - 75, 20, 75);
+        // Drei Dachebenen
+        for (let i = 0; i < 3; i++) {
+          const ry = baseY - 75 + i * 24;
+          const rw = 17 + i * 8;
+          ctx.beginPath();
+          ctx.moveTo(sx, ry - 8);
+          ctx.lineTo(sx + rw, ry);
+          ctx.lineTo(sx - rw, ry);
+          ctx.closePath();
+          ctx.fill();
+        }
+      };
+
+      drawPagodaSil(180, 400);
+      drawPagodaSil(560, 400);
+      drawPagodaSil(980, 400);
+      drawPagodaSil(1380, 400);
+      drawPagodaSil(1750, 400);
+
+      ctx.restore();
     } else {
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, GAME_W, GAME_H);
     }
   }
 
   // Plattformen zeichnen – nur dünne weiße Linien
   drawPlatforms(ctx, platforms, camera) {
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = "#fff";
     ctx.lineWidth = 1.5;
 
     for (const p of platforms) {
@@ -66,7 +110,7 @@ export class UI {
       ctx.stroke();
 
       // Bei speziellen Oberflächen: Markierung
-      if (p.surface === 'ice') {
+      if (p.surface === "ice") {
         // Gestrichelte Linie darunter
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -74,7 +118,7 @@ export class UI {
         ctx.lineTo(x + p.w, y + 4);
         ctx.stroke();
         ctx.setLineDash([]);
-      } else if (p.surface === 'sand') {
+      } else if (p.surface === "sand") {
         // Gepunktete Linie darunter
         ctx.setLineDash([2, 3]);
         ctx.beginPath();
@@ -82,7 +126,7 @@ export class UI {
         ctx.lineTo(x + p.w, y + 4);
         ctx.stroke();
         ctx.setLineDash([]);
-      } else if (p.surface === 'trampolin') {
+      } else if (p.surface === "trampolin") {
         // Zickzack-Linie
         ctx.beginPath();
         for (let fx = x; fx < x + p.w; fx += 8) {
@@ -116,28 +160,28 @@ export class UI {
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = "#fff";
         ctx.beginPath();
         ctx.arc(x, coin.y + offsetY, 5 * scale, 0, Math.PI * 2);
         ctx.stroke();
 
         // +10 Text
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = "#fff";
         ctx.font = `bold ${12 + t * 6}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('+10', x, coin.y + offsetY - 12 * scale);
+        ctx.textAlign = "center";
+        ctx.fillText("+10", x, coin.y + offsetY - 12 * scale);
         ctx.restore();
         continue;
       }
 
       // Normale Münze
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = "#fff";
       ctx.beginPath();
       ctx.arc(x, coin.y, 5, 0, Math.PI * 2);
       ctx.stroke();
 
       // Punkt in der Mitte
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = "#fff";
       ctx.beginPath();
       ctx.arc(x, coin.y, 1.5, 0, Math.PI * 2);
       ctx.fill();
@@ -155,18 +199,18 @@ export class UI {
       const pulse = Math.sin(Date.now() / 300) * 3;
 
       // Kreis-Umriss
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = "#fff";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(x, y, 12 + pulse, 0, Math.PI * 2);
       ctx.stroke();
 
       // Fragezeichen
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('?', x, y);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", x, y);
     }
   }
 
@@ -175,19 +219,24 @@ export class UI {
     const x = goal.x - camera;
     if (x < -80 || x > GAME_W + 80) return;
 
-    if (theme === 'walle') {
+    if (theme === "walle") {
       this._drawEve(ctx, x, goal);
       return;
     }
 
-    if (theme === 'minecraft') {
+    if (theme === "minecraft") {
       this._drawCreeper(ctx, x, goal);
+      return;
+    }
+
+    if (theme === "ninjago") {
+      this._drawSenseiWu(ctx, x, goal);
       return;
     }
 
     const pulse = Math.sin(Date.now() / 400) * 2;
 
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = "#fff";
     ctx.lineWidth = 1.5;
 
     // Flaggenmast
@@ -205,10 +254,10 @@ export class UI {
     ctx.stroke();
 
     // "ZIEL" Text
-    ctx.fillStyle = '#fff';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('ZIEL', x + 30, goal.y - 46 + pulse);
+    ctx.fillStyle = "#fff";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("ZIEL", x + 30, goal.y - 46 + pulse);
   }
 
   // Eve zeichnen (eiförmig, schwebend)
@@ -219,9 +268,9 @@ export class UI {
     const cy = baseY - 15 + hover;
 
     ctx.save();
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = "#fff";
     ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    ctx.lineCap = "round";
 
     // Körper (Ei-Form)
     ctx.beginPath();
@@ -234,7 +283,7 @@ export class UI {
     ctx.stroke();
 
     // Augen (leuchtende Punkte)
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = "#fff";
     ctx.beginPath();
     ctx.ellipse(centerX - 4, cy - 6, 2.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -247,21 +296,31 @@ export class UI {
     // Linker Arm
     ctx.beginPath();
     ctx.moveTo(centerX - 12, cy - 2);
-    ctx.quadraticCurveTo(centerX - 22, cy + armWave, centerX - 18, cy + 10 + armWave);
+    ctx.quadraticCurveTo(
+      centerX - 22,
+      cy + armWave,
+      centerX - 18,
+      cy + 10 + armWave,
+    );
     ctx.stroke();
     // Rechter Arm
     ctx.beginPath();
     ctx.moveTo(centerX + 12, cy - 2);
-    ctx.quadraticCurveTo(centerX + 22, cy - armWave, centerX + 18, cy + 10 - armWave);
+    ctx.quadraticCurveTo(
+      centerX + 22,
+      cy - armWave,
+      centerX + 18,
+      cy + 10 - armWave,
+    );
     ctx.stroke();
 
     // "EVE" Text
     const blink = Math.sin(Date.now() / 300) * 0.3 + 0.7;
     ctx.globalAlpha = blink;
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('EVE', centerX, cy - 28 + hover);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("EVE", centerX, cy - 28 + hover);
     ctx.globalAlpha = 1;
 
     ctx.restore();
@@ -274,10 +333,10 @@ export class UI {
     const pulse = Math.sin(Date.now() / 600) * 1.5;
 
     ctx.save();
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = "#fff";
     ctx.lineWidth = 1.5;
-    ctx.lineCap = 'square';
-    ctx.lineJoin = 'miter';
+    ctx.lineCap = "square";
+    ctx.lineJoin = "miter";
 
     // Füße (2 Blöcke)
     ctx.strokeRect(centerX - 9, baseY - 10, 7, 10);
@@ -291,7 +350,7 @@ export class UI {
     ctx.strokeRect(centerX - 10, headY, 20, 16);
 
     // Creeper-Gesicht (das ikonische Muster)
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = "#fff";
     // Augen (2 quadratische Pixel)
     ctx.fillRect(centerX - 7, headY + 3, 4, 4);
     ctx.fillRect(centerX + 3, headY + 3, 4, 4);
@@ -303,9 +362,96 @@ export class UI {
     // "ZIEL" Text
     const blink = Math.sin(Date.now() / 400) * 0.3 + 0.7;
     ctx.globalAlpha = blink;
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('ZIEL', centerX, headY - 6 + pulse);
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("ZIEL", centerX, headY - 6 + pulse);
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+
+  // Sensei Wu zeichnen (alter Ninja-Meister mit Hut und Stab)
+  _drawSenseiWu(ctx, x, goal) {
+    const centerX = x + 30;
+    const baseY = goal.y + goal.h;
+    const hover = Math.sin(Date.now() / 700) * 1.8;
+
+    ctx.save();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // Beine (alt und gebückt)
+    ctx.beginPath();
+    ctx.moveTo(centerX - 4, baseY + hover);
+    ctx.lineTo(centerX - 3, baseY - 13 + hover);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(centerX + 4, baseY + hover);
+    ctx.lineTo(centerX + 3, baseY - 13 + hover);
+    ctx.stroke();
+
+    // Robe / Körper (breites Gewand)
+    ctx.beginPath();
+    ctx.moveTo(centerX - 3, baseY - 13 + hover);
+    ctx.lineTo(centerX + 3, baseY - 13 + hover);
+    ctx.lineTo(centerX + 7, baseY - 32 + hover);
+    ctx.lineTo(centerX - 7, baseY - 32 + hover);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Arme (linker Arm auf Stab gestützt, rechter frei)
+    ctx.beginPath();
+    ctx.moveTo(centerX - 7, baseY - 28 + hover);
+    ctx.lineTo(centerX - 16, baseY - 17 + hover);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(centerX + 7, baseY - 28 + hover);
+    ctx.lineTo(centerX + 11, baseY - 19 + hover);
+    ctx.stroke();
+
+    // Stab
+    ctx.beginPath();
+    ctx.moveTo(centerX - 16, baseY - 17 + hover);
+    ctx.lineTo(centerX - 16, baseY + 2 + hover);
+    ctx.stroke();
+
+    // Kopf
+    const headY = baseY - 45 + hover;
+    ctx.beginPath();
+    ctx.arc(centerX, headY, 7, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Langer Spitzbart
+    ctx.beginPath();
+    ctx.moveTo(centerX - 3, headY + 6);
+    ctx.quadraticCurveTo(
+      centerX - 1,
+      headY + 16,
+      centerX + 1,
+      headY + 24 + hover * 0.2,
+    );
+    ctx.stroke();
+
+    // Konischer Sugegasa-Hut
+    ctx.beginPath();
+    ctx.moveTo(centerX - 17, headY - 3 + hover);
+    ctx.lineTo(centerX, headY - 20 + hover);
+    ctx.lineTo(centerX + 17, headY - 3 + hover);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(centerX - 17, headY - 3 + hover);
+    ctx.lineTo(centerX + 17, headY - 3 + hover);
+    ctx.stroke();
+
+    // "SENSEI WU" Text (blinkend)
+    const blink = Math.sin(Date.now() / 400) * 0.3 + 0.7;
+    ctx.globalAlpha = blink;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SENSEI WU", centerX, headY - 26 + hover);
     ctx.globalAlpha = 1;
 
     ctx.restore();
@@ -314,64 +460,78 @@ export class UI {
   // Physik-Info Anzeige
   drawPhysicsInfo(ctx, player) {
     const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2).toFixed(1);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'right';
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
     ctx.fillText(`v: ${speed} px/f`, GAME_W - 10, GAME_H - 10);
   }
 }
 
 // Touch-Controls Setup – mit Multi-Touch und visuellem Feedback
 export function setupTouchControls(keys) {
-  const btnLeft = document.getElementById('btn-left');
-  const btnRight = document.getElementById('btn-right');
-  const btnJump = document.getElementById('btn-jump');
+  const btnLeft = document.getElementById("btn-left");
+  const btnRight = document.getElementById("btn-right");
+  const btnJump = document.getElementById("btn-jump");
 
   // Aktive Touches pro Button tracken
   const activeTouches = new Map();
 
   function bind(btn, key) {
-    btn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      for (const t of e.changedTouches) {
-        activeTouches.set(t.identifier, { btn, key });
-      }
-      keys[key] = true;
-      btn.classList.add('active');
-    }, { passive: false });
+    btn.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        for (const t of e.changedTouches) {
+          activeTouches.set(t.identifier, { btn, key });
+        }
+        keys[key] = true;
+        btn.classList.add("active");
+      },
+      { passive: false },
+    );
 
-    btn.addEventListener('touchend', (e) => {
-      e.preventDefault();
+    btn.addEventListener(
+      "touchend",
+      (e) => {
+        e.preventDefault();
+        for (const t of e.changedTouches) {
+          activeTouches.delete(t.identifier);
+        }
+        // Nur loslassen wenn kein Touch mehr auf diesem Button
+        let stillPressed = false;
+        for (const [, v] of activeTouches) {
+          if (v.key === key) {
+            stillPressed = true;
+            break;
+          }
+        }
+        if (!stillPressed) {
+          keys[key] = false;
+          btn.classList.remove("active");
+        }
+      },
+      { passive: false },
+    );
+
+    btn.addEventListener("touchcancel", (e) => {
       for (const t of e.changedTouches) {
         activeTouches.delete(t.identifier);
       }
-      // Nur loslassen wenn kein Touch mehr auf diesem Button
       let stillPressed = false;
       for (const [, v] of activeTouches) {
-        if (v.key === key) { stillPressed = true; break; }
+        if (v.key === key) {
+          stillPressed = true;
+          break;
+        }
       }
       if (!stillPressed) {
         keys[key] = false;
-        btn.classList.remove('active');
-      }
-    }, { passive: false });
-
-    btn.addEventListener('touchcancel', (e) => {
-      for (const t of e.changedTouches) {
-        activeTouches.delete(t.identifier);
-      }
-      let stillPressed = false;
-      for (const [, v] of activeTouches) {
-        if (v.key === key) { stillPressed = true; break; }
-      }
-      if (!stillPressed) {
-        keys[key] = false;
-        btn.classList.remove('active');
+        btn.classList.remove("active");
       }
     });
   }
 
-  bind(btnLeft, 'left');
-  bind(btnRight, 'right');
-  bind(btnJump, 'jump');
+  bind(btnLeft, "left");
+  bind(btnRight, "right");
+  bind(btnJump, "jump");
 }
