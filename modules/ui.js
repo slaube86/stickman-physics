@@ -457,6 +457,122 @@ export class UI {
     ctx.restore();
   }
 
+  // Gegner zeichnen – Skulkin-Skelett-Ninjas mit X-Augen
+  drawEnemies(ctx, enemies, camera) {
+    for (const e of enemies) {
+      if (e.state === "dead") continue;
+
+      const x = e.x - camera + e.w / 2;
+      const y = e.y + e.h;
+
+      if (x < -60 || x > GAME_W + 60) continue;
+
+      ctx.save();
+      ctx.translate(x, y);
+
+      if (e.state === "knocked") {
+        // Wegfliegen: Spin + Fade
+        const t = 1 - e.knockTimer / 50;
+        ctx.globalAlpha = Math.max(0, 1 - t * 1.3);
+        ctx.rotate(t * Math.PI * 3 * (e.vx >= 0 ? 1 : -1));
+      } else {
+        ctx.scale(e.facing, 1);
+      }
+
+      ctx.strokeStyle = "#fff";
+      ctx.fillStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      const h = e.h;
+      const hr = 7;
+      const bodyTop = -h + hr * 2;
+      const bodyBottom = bodyTop + 14;
+
+      // ── Kopf ──
+      ctx.beginPath();
+      ctx.arc(0, -h + hr, hr, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Böse V-förmige Augenbrauen
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-5, -h + hr - 4);
+      ctx.lineTo(-1, -h + hr - 2);
+      ctx.moveTo(1, -h + hr - 2);
+      ctx.lineTo(5, -h + hr - 4);
+      ctx.stroke();
+
+      // X-Augen (Totenschädel-Stil)
+      ctx.beginPath();
+      ctx.moveTo(-4.5, -h + hr - 1.5);
+      ctx.lineTo(-1.5, -h + hr + 1.5);
+      ctx.moveTo(-1.5, -h + hr - 1.5);
+      ctx.lineTo(-4.5, -h + hr + 1.5);
+      ctx.moveTo(1.5, -h + hr - 1.5);
+      ctx.lineTo(4.5, -h + hr + 1.5);
+      ctx.moveTo(4.5, -h + hr - 1.5);
+      ctx.lineTo(1.5, -h + hr + 1.5);
+      ctx.stroke();
+      ctx.lineWidth = 2;
+
+      // ── Rumpf ──
+      ctx.beginPath();
+      ctx.moveTo(0, bodyTop);
+      ctx.lineTo(0, bodyBottom);
+      ctx.stroke();
+
+      // ── Arme ──
+      if (e.state === "knocked") {
+        // Arme weit ausgestreckt beim Wegfliegen
+        ctx.beginPath();
+        ctx.moveTo(0, bodyTop + 3);
+        ctx.lineTo(-14, bodyTop - 3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, bodyTop + 3);
+        ctx.lineTo(14, bodyTop - 3);
+        ctx.stroke();
+      } else {
+        // Kampfhaltung mit leichter Wackel-Animation
+        const armWave = Math.sin(Date.now() / 280 + e.x * 0.05) * 3;
+        ctx.beginPath();
+        ctx.moveTo(0, bodyTop + 3);
+        ctx.lineTo(-11, bodyTop + 9 + armWave);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, bodyTop + 3);
+        ctx.lineTo(11, bodyTop + 9 - armWave);
+        ctx.stroke();
+      }
+
+      // ── Beine ──
+      if (e.state === "knocked") {
+        ctx.beginPath();
+        ctx.moveTo(0, bodyBottom);
+        ctx.lineTo(-9, bodyBottom - 7);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, bodyBottom);
+        ctx.lineTo(9, bodyBottom - 7);
+        ctx.stroke();
+      } else {
+        const legSwing = Math.sin(Date.now() / 260 + e.x * 0.07) * 5;
+        ctx.beginPath();
+        ctx.moveTo(0, bodyBottom);
+        ctx.lineTo(-5 + legSwing, bodyBottom + 12);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, bodyBottom);
+        ctx.lineTo(5 - legSwing, bodyBottom + 12);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+  }
+
   // Physik-Info Anzeige
   drawPhysicsInfo(ctx, player) {
     const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2).toFixed(1);

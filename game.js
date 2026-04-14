@@ -9,6 +9,7 @@ import {
   resolveCollisions,
   getCurrentSurface,
   JUMP_FORCE,
+  DEFAULT_GRAVITY,
 } from "./modules/physics.js?v=18";
 import { loadLevel, getTotalLevels } from "./modules/level.js?v=18";
 import { LearnSystem } from "./modules/learn.js?v=18";
@@ -22,6 +23,10 @@ const ctx = canvas.getContext("2d");
 // Logische Spielfeldgröße (alle Koordinaten beziehen sich hierauf)
 const GAME_W = 800;
 const GAME_H = 400;
+
+// Gegner-Größe (in Pixel)
+const ENEMY_W = 18;
+const ENEMY_H = 38;
 
 // HiDPI-Canvas: Auflösung an tatsächliche Pixeldichte anpassen
 function resizeCanvas() {
@@ -45,6 +50,7 @@ let score = 0;
 let gameState = "menu"; // menu, playing, levelSelect, levelComplete, gameOver
 let lastTime = 0;
 let levelCompleteTimer = 0;
+let enemies = []; // aktive Gegner im aktuellen Level
 
 // ─── Systeme ───────────────────────────────────────────────
 const ui = new UI(canvas);
@@ -98,6 +104,20 @@ function startLevel(id) {
   cameraY = 0;
   gameState = "playing";
   levelCompleteTimer = 0;
+  // Gegner aus Level-Daten instanziieren
+  enemies = (level.enemies || []).map((e) => ({
+    x: e.x,
+    y: e.platformY - ENEMY_H,
+    w: ENEMY_W,
+    h: ENEMY_H,
+    vx: e.speed || 1.2,
+    speed: e.speed || 1.2,
+    patrolLeft: e.patrolLeft,
+    patrolRight: e.patrolRight,
+    state: "patrol", // patrol | knocked | dead
+    facing: 1,
+    knockTimer: 0,
+  }));
   audio.startMusic(level.theme);
 }
 
@@ -300,6 +320,62 @@ muteBtn.addEventListener("click", () => {
   muteBtn.textContent = muted ? "🔇" : "🔊";
 });
 
+// ─── Gegner-KI & Kick-Erkennung ────────────────────────────
+function updateEnemies() {
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+
+    if (e.state === "dead") {
+      enemies.splice(i, 1);
+      continue;
+    }
+
+    if (e.state === "knocked") {
+      e.knockTimer--;
+      e.vy += DEFAULT_GRAVITY; // Schwerkraft beim Wegfliegen
+      e.x += e.vx;
+      e.y += e.vy;
+      if (e.knockTimer <= 0) e.state = "dead";
+      continue;
+    }
+
+    // Patrol: hin- und herlaufen innerhalb der Plattform-Grenzen
+    e.x += e.vx;
+    if (e.x <= e.patrolLeft) {
+      e.x = e.patrolLeft;
+      e.vx = Math.abs(e.speed);
+      e.facing = 1;
+    } else if (e.x + e.w >= e.patrolRight) {
+      e.x = e.patrolRight - e.w;
+      e.vx = -Math.abs(e.speed);
+      e.facing = -1;
+    }
+
+    // Kollision mit Spieler → automatischer Roundhouse-Kick!
+    if (player.kickTimer <= 0) {
+      const pb = player.getBounds();
+      if (
+        pb.x < e.x + e.w &&
+        pb.x + pb.w > e.x &&
+        pb.y < e.y + e.h &&
+        pb.y + pb.h > e.y
+      ) {
+        // Kick-Animation starten
+        player.kickTimer = 22;
+        const dir = e.x + e.w / 2 > player.x + player.w / 2 ? 1 : -1;
+        player.facing = dir;
+        // Gegner wegschleudern
+        e.state = "knocked";
+        e.knockTimer = 50;
+        e.vx = dir * 9;
+        e.vy = -7;
+        score += 20;
+        audio.playBounce();
+      }
+    }
+  }
+}
+
 // ─── Update ────────────────────────────────────────────────
 function update(dt) {
   if (gameState !== "playing") return;
@@ -341,6 +417,9 @@ function update(dt) {
 
   // Stickman Animation
   player.update(keys, dt);
+
+  // Gegner aktualisieren & Kick-Kollision prüfen
+  updateEnemies();
 
   // Kamera (Spieler zentrieren, mit Rand)
   const targetCam = player.x - GAME_W / 3;
@@ -458,6 +537,7 @@ function render() {
   ui.drawCoins(ctx, level.coins, camera);
   ui.drawLearnTriggers(ctx, level.learnTriggers, camera);
   ui.drawGoal(ctx, level.goal, camera, level.theme);
+  ui.drawEnemies(ctx, enemies, camera);
 
   // Stickman zeichnen (relativ zur Kamera)
   ctx.save();

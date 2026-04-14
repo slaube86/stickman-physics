@@ -17,12 +17,19 @@ export class Stickman {
     // Animation
     this.animFrame = 0;
     this.animTimer = 0;
-    this.state = "idle"; // idle, run, jump, fall
+    this.state = "idle"; // idle, run, jump, fall, kick
+
+    // Kick-Animation
+    this.kickTimer = 0;
   }
 
   update(keys, dt) {
-    // State bestimmen
-    if (!this.onGround) {
+    // Kick-Animation hat Vorrang vor allem anderen
+    if (this.kickTimer > 0) {
+      this.state = "kick";
+      this.kickTimer--;
+    } else if (!this.onGround) {
+      // State bestimmen
       this.state = this.vy < 0 ? "jump" : "fall";
     } else if (Math.abs(this.vx) > 0.5) {
       this.state = "run";
@@ -111,6 +118,10 @@ export class Stickman {
   }
 
   _getArmSwing() {
+    if (this.state === "kick") {
+      // Linker Arm weit zurück für Balance, rechter leicht vorne
+      return { left: -14, right: 4 };
+    }
     if (this.state === "jump") {
       return { left: -8, right: -8 }; // Arme hoch
     }
@@ -122,6 +133,10 @@ export class Stickman {
   }
 
   _getLegSwing() {
+    if (this.state === "kick") {
+      // Roundhouse-Kick: rechtes Bein schwingt weit seitlich-hoch raus
+      return { leftX: -3, leftY: 5, rightX: 22, rightY: -10 };
+    }
     if (this.state === "jump") {
       return { leftX: -3, leftY: -4, rightX: 3, rightY: -4 };
     }

@@ -381,6 +381,38 @@ export const LEVELS = [
     ],
     goal: { x: 1760, y: 233, w: 60, h: 32 },
     worldWidth: 1950,
+    enemies: [
+      // Dojo-Wächter (Startbereich)
+      { x: 110, platformY: 370, patrolLeft: 20, patrolRight: 215, speed: 1.2 },
+      // Eisteich-Wächter (rutschige Verfolgung)
+      { x: 600, platformY: 370, patrolLeft: 510, patrolRight: 710, speed: 1.4 },
+      // Trainingsgelände-Wächter (Sand-Plattform)
+      { x: 830, platformY: 300, patrolLeft: 805, patrolRight: 875, speed: 0.9 },
+      // Pagodendach 1
+      {
+        x: 1265,
+        platformY: 305,
+        patrolLeft: 1225,
+        patrolRight: 1315,
+        speed: 1.3,
+      },
+      // Pagodendach 2 (höchstes Dach)
+      {
+        x: 1430,
+        platformY: 245,
+        patrolLeft: 1385,
+        patrolRight: 1475,
+        speed: 1.1,
+      },
+      // Tempelgipfel-Wächter (letzter Kampf vor Sensei Wu)
+      {
+        x: 1800,
+        platformY: 265,
+        patrolLeft: 1735,
+        patrolRight: 1885,
+        speed: 1.5,
+      },
+    ],
   },
 ];
 
