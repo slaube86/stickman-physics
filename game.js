@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=18";
+import { Stickman } from "./modules/stickman.js?v=19";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=18";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=18";
-import { LearnSystem } from "./modules/learn.js?v=18";
-import { UI, setupTouchControls } from "./modules/ui.js?v=18";
-import { AudioManager } from "./modules/audio.js?v=18";
+} from "./modules/physics.js?v=19";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=19";
+import { LearnSystem } from "./modules/learn.js?v=19";
+import { UI, setupTouchControls } from "./modules/ui.js?v=19";
+import { AudioManager } from "./modules/audio.js?v=19";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -550,6 +550,8 @@ function render() {
     player.drawSpace(ctx);
   } else if (level.theme === "ninjago") {
     player.drawNinja(ctx);
+  } else if (level.theme === "clockwork") {
+    player.drawEngineer(ctx);
   } else {
     player.draw(ctx);
   }

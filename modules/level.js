@@ -315,6 +315,69 @@ export const LEVELS = [
     worldWidth: 800,
   },
 
+  // Level 8 – Clockwork Cog
+  {
+    id: 8,
+    name: "Clockwork Cog",
+    theme: "clockwork",
+    spawnX: 50,
+    spawnY: 300,
+    platforms: [
+      // ─── Sektion 1: Eingang ─────────────────────────────────
+      { x: 0,    y: 370, w: 250, h: 30, surface: "normal" },
+      { x: 195,  y: 315, w: 80,  h: 15, surface: "normal" },
+      { x: 320,  y: 370, w: 200, h: 30, surface: "normal" },
+      // ─── Sektion 2: Getriebe-Kammer ─────────────────────────
+      { x: 565,  y: 320, w: 80,  h: 15, surface: "normal" },
+      { x: 690,  y: 265, w: 80,  h: 15, surface: "normal" },
+      { x: 815,  y: 320, w: 80,  h: 15, surface: "normal" },
+      { x: 940,  y: 370, w: 200, h: 30, surface: "normal" },
+      { x: 970,  y: 365, w: 55,  h: 10, surface: "trampolin" },
+      // ─── Sektion 3: Pendel-Halle ────────────────────────────
+      { x: 1150, y: 305, w: 90,  h: 15, surface: "normal" },
+      { x: 1330, y: 250, w: 80,  h: 15, surface: "normal" },
+      { x: 1500, y: 305, w: 80,  h: 15, surface: "normal" },
+      { x: 1625, y: 370, w: 180, h: 30, surface: "normal" },
+      // ─── Sektion 4: Uhrzifferblatt (Eisplattformen) ─────────
+      { x: 1660, y: 310, w: 90,  h: 15, surface: "ice" },
+      { x: 1800, y: 255, w: 90,  h: 15, surface: "ice" },
+      { x: 1940, y: 310, w: 90,  h: 15, surface: "ice" },
+      // ─── Sektion 5: Meister-Zahnrad / Ziel ──────────────────
+      { x: 2080, y: 370, w: 220, h: 30, surface: "sand" },
+      { x: 2105, y: 305, w: 120, h: 15, surface: "normal" },
+    ],
+    coins: [
+      { x: 237,  y: 290 },
+      { x: 385,  y: 345 },
+      { x: 605,  y: 295 },
+      { x: 730,  y: 240 },
+      { x: 855,  y: 295 },
+      { x: 997,  y: 340 },
+      { x: 1195, y: 280 },
+      { x: 1370, y: 225 },
+      { x: 1540, y: 280 },
+      { x: 1705, y: 285 },
+      { x: 1845, y: 230 },
+      { x: 1985, y: 285 },
+      { x: 2165, y: 280 },
+    ],
+    learnTriggers: [
+      { x: 600,  y: 290, w: 40, h: 40, factId: "cw_rotation",   triggered: false },
+      { x: 1350, y: 220, w: 40, h: 40, factId: "cw_pendulum",   triggered: false },
+      { x: 1680, y: 280, w: 40, h: 40, factId: "cw_gear_ratio", triggered: false },
+    ],
+    goal: { x: 2135, y: 275, w: 60, h: 30 },
+    worldWidth: 2350,
+    enemies: [
+      { x: 820,  platformY: 320, patrolLeft: 820,  patrolRight: 890,  speed: 1.5 },
+      { x: 960,  platformY: 370, patrolLeft: 945,  patrolRight: 1130, speed: 1.8 },
+      { x: 1160, platformY: 305, patrolLeft: 1155, patrolRight: 1235, speed: 1.4 },
+      { x: 1340, platformY: 250, patrolLeft: 1335, patrolRight: 1405, speed: 1.7 },
+      { x: 2090, platformY: 370, patrolLeft: 2085, patrolRight: 2290, speed: 2.0 },
+      { x: 2115, platformY: 305, patrolLeft: 2110, patrolRight: 2220, speed: 1.5 },
+    ],
+  },
+
   // Level 7 – Ninjago Tempel
   {
     id: 7,

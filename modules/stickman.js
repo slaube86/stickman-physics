@@ -385,6 +385,99 @@ export class Stickman {
     ctx.restore();
   }
 
+  // Steampunk-Ingenieur für das Clockwork-Level
+  drawEngineer(ctx) {
+    ctx.save();
+    ctx.translate(this.x + this.w / 2, this.y + this.h);
+    ctx.scale(this.facing, 1);
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.fillStyle = "#ffffff";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const headRadius = 8;
+    const bodyLength = 18;
+    const limbLength = 14;
+    const headCY = -this.h + headRadius;
+
+    // Kopf
+    ctx.beginPath();
+    ctx.arc(0, headCY, headRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Monokel
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(3, headCY - 1, 3.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 2.5;
+
+    // Monokel-Auge
+    ctx.beginPath();
+    ctx.arc(3, headCY - 1, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Zylinderhut
+    const hatBase = headCY - headRadius;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-headRadius - 3, hatBase + 1);
+    ctx.lineTo(headRadius + 3, hatBase + 1);
+    ctx.stroke();
+    ctx.strokeRect(-5, hatBase - 12, 10, 13);
+    ctx.lineWidth = 2.5;
+
+    // Rumpf
+    const bodyTop = headCY + headRadius;
+    const bodyBottom = bodyTop + bodyLength;
+    ctx.beginPath();
+    ctx.moveTo(0, bodyTop);
+    ctx.lineTo(0, bodyBottom);
+    ctx.stroke();
+
+    // Arme
+    const armY = bodyTop + 4;
+    const armSwing = this._getArmSwing();
+    ctx.beginPath();
+    ctx.moveTo(0, armY);
+    ctx.lineTo(-8, armY + limbLength + armSwing.left);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, armY);
+    ctx.lineTo(8, armY + limbLength + armSwing.right);
+    ctx.stroke();
+
+    // Schraubenschlüssel am rechten Arm
+    const wx = 8;
+    const wy = armY + limbLength + armSwing.right;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(wx, wy);
+    ctx.lineTo(wx + 7, wy + 5);
+    ctx.stroke();
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(wx + 7, wy + 5);
+    ctx.lineTo(wx + 9, wy + 8);
+    ctx.stroke();
+    ctx.lineWidth = 2.5;
+
+    // Beine
+    const legSwing = this._getLegSwing();
+    ctx.beginPath();
+    ctx.moveTo(0, bodyBottom);
+    ctx.lineTo(-6 + legSwing.leftX, bodyBottom + limbLength + legSwing.leftY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, bodyBottom);
+    ctx.lineTo(6 + legSwing.rightX, bodyBottom + limbLength + legSwing.rightY);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
   // Ninja-Skin für das Ninjago-Level
   drawNinja(ctx) {
     ctx.save();

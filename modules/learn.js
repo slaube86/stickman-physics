@@ -96,6 +96,21 @@ const FACTS = {
     title: "Spinjitzu & Drehimpuls",
     text: "Spinjitzu ist die Kampfkunst der Ninjago-Ninjas! Beim Drehen entsteht ein Drehimpuls – genauso wie bei einem Kreisel, der sich kaum umwerfen lässt. Je schneller die Drehung, desto stabiler!",
   },
+  cw_rotation: {
+    icon: "⚙️",
+    title: "Drehbewegung",
+    text: "Zahnräder drehen sich im Kreis – das nennt man Rotation! Jeder Punkt am Rand bewegt sich schneller als die Mitte. Deshalb können große Zahnräder viel Kraft erzeugen!",
+  },
+  cw_pendulum: {
+    icon: "🕰️",
+    title: "Das Pendel",
+    text: "Ein Pendel schwingt immer gleich lange – egal wie weit! Früher haben Uhrmacher das zum Zeitmessen genutzt. Diese regelmäßige Schwingung heißt harmonische Bewegung.",
+  },
+  cw_gear_ratio: {
+    icon: "🔩",
+    title: "Zahnrad-Übersetzung",
+    text: "Kleine Zahnräder drehen sich schneller als große – aber mit weniger Kraft! Große Zahnräder sind langsamer, dafür stärker. Das nennt man Übersetzungsverhältnis!",
+  },
 };
 
 export class LearnSystem {

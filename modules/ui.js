@@ -85,6 +85,71 @@ export class UI {
       drawPagodaSil(1750, 400);
 
       ctx.restore();
+    } else if (theme === "clockwork") {
+      // Dark sepia background
+      ctx.fillStyle = "#0c0a08";
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Generate gear silhouettes once per level
+      if (!level._gearField) {
+        level._gearField = [
+          { cx: 200,  cy: 95,  r: 75,  teeth: 10, speed:  0.00030 },
+          { cx: 700,  cy: 355, r: 95,  teeth: 12, speed: -0.00022 },
+          { cx: 1150, cy: 65,  r: 60,  teeth: 8,  speed:  0.00042 },
+          { cx: 1650, cy: 370, r: 85,  teeth: 11, speed: -0.00030 },
+          { cx: 2150, cy: 110, r: 70,  teeth: 9,  speed:  0.00035 },
+          { cx: 2650, cy: 310, r: 100, teeth: 14, speed: -0.00024 },
+        ];
+      }
+
+      const parallax = camera * 0.2;
+      const now = Date.now();
+
+      ctx.save();
+      for (const g of level._gearField) {
+        const sx = g.cx - parallax;
+        if (sx + g.r < -20 || sx - g.r > GAME_W + 20) continue;
+
+        const innerR = g.r * 0.72;
+        const toothW = g.r * 0.28;
+        const toothH = g.r * 0.27;
+
+        ctx.save();
+        ctx.translate(sx, g.cy);
+        ctx.rotate(now * g.speed);
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = "#c8a06a";
+
+        for (let i = 0; i < g.teeth; i++) {
+          ctx.save();
+          ctx.rotate((i / g.teeth) * Math.PI * 2);
+          ctx.fillRect(-toothW / 2, innerR - 2, toothW, toothH + 4);
+          ctx.restore();
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, innerR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // Horizontal steam pipes near the top
+      ctx.save();
+      ctx.globalAlpha = 0.05;
+      ctx.strokeStyle = "#c8a06a";
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(0, 28);
+      ctx.lineTo(GAME_W, 28);
+      ctx.stroke();
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 44);
+      ctx.lineTo(GAME_W * 0.65, 44);
+      ctx.stroke();
+      ctx.restore();
     } else {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, GAME_W, GAME_H);
@@ -231,6 +296,11 @@ export class UI {
 
     if (theme === "ninjago") {
       this._drawSenseiWu(ctx, x, goal);
+      return;
+    }
+
+    if (theme === "clockwork") {
+      this._drawClockworkGear(ctx, x, goal);
       return;
     }
 
@@ -454,6 +524,67 @@ export class UI {
     ctx.fillText("SENSEI WU", centerX, headY - 26 + hover);
     ctx.globalAlpha = 1;
 
+    ctx.restore();
+  }
+
+  // Drehendes Meister-Zahnrad als Ziel
+  _drawClockworkGear(ctx, x, goal) {
+    const now = Date.now();
+    const centerX = x + 30;
+    const centerY = goal.y - 4;
+    const pulse = Math.sin(now / 380) * 1.5;
+    const outerR = 16 + pulse;
+    const innerR = outerR * 0.68;
+    const toothCount = 8;
+    const toothW = 6;
+    const toothH = 7;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(now * 0.0009);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+
+    // Teeth
+    for (let i = 0; i < toothCount; i++) {
+      ctx.save();
+      ctx.rotate((i / toothCount) * Math.PI * 2);
+      ctx.strokeRect(-toothW / 2, innerR, toothW, toothH);
+      ctx.restore();
+    }
+
+    // Main circle
+    ctx.beginPath();
+    ctx.arc(0, 0, innerR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4 Spokes
+    for (let i = 0; i < 4; i++) {
+      ctx.save();
+      ctx.rotate((i / 4) * Math.PI * 2);
+      ctx.beginPath();
+      ctx.moveTo(0, innerR * 0.28);
+      ctx.lineTo(0, innerR - 1);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Hub
+    ctx.beginPath();
+    ctx.arc(0, 0, innerR * 0.28, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // "ZIEL" blinking text
+    const blink = Math.sin(now / 400) * 0.3 + 0.7;
+    ctx.save();
+    ctx.globalAlpha = blink;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("ZIEL", centerX, centerY - outerR - 10);
     ctx.restore();
   }
 
