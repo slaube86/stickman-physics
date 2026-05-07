@@ -150,6 +150,53 @@ export class UI {
       ctx.lineTo(GAME_W * 0.65, 44);
       ctx.stroke();
       ctx.restore();
+    } else if (theme === "desert") {
+      // Warmer Himmel – orange → goldgelb
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME_H);
+      skyGrad.addColorStop(0,   "#d46a1a");
+      skyGrad.addColorStop(0.55, "#e8a830");
+      skyGrad.addColorStop(1,   "#c8843a");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Sonne (oben rechts)
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = "#fff5cc";
+      ctx.beginPath();
+      ctx.arc(680, 52, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath();
+      ctx.arc(680, 52, 42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Hintergrund-Dünen-Silhouetten (Parallax)
+      const parallax = camera * 0.15;
+      ctx.save();
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = "#a85f18";
+
+      const drawDune = (px, baseY, w, h) => {
+        const sx = px - parallax;
+        if (sx + w < -20 || sx > GAME_W + 20) return;
+        ctx.beginPath();
+        ctx.moveTo(sx, baseY);
+        ctx.quadraticCurveTo(sx + w / 2, baseY - h, sx + w, baseY);
+        ctx.closePath();
+        ctx.fill();
+      };
+
+      drawDune(60,   GAME_H, 260,  85);
+      drawDune(340,  GAME_H, 190,  65);
+      drawDune(590,  GAME_H, 300, 100);
+      drawDune(940,  GAME_H, 240,  78);
+      drawDune(1220, GAME_H, 280,  92);
+      drawDune(1550, GAME_H, 220,  72);
+      drawDune(1830, GAME_H, 260,  80);
+
+      ctx.restore();
     } else {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, GAME_W, GAME_H);
@@ -301,6 +348,11 @@ export class UI {
 
     if (theme === "clockwork") {
       this._drawClockworkGear(ctx, x, goal);
+      return;
+    }
+
+    if (theme === "desert") {
+      this._drawPersianGate(ctx, x, goal);
       return;
     }
 
@@ -585,6 +637,64 @@ export class UI {
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("ZIEL", centerX, centerY - outerR - 10);
+    ctx.restore();
+  }
+
+  // Persisches Tor (Hufeisenbogen + Zwiebelkuppel) als Ziel
+  _drawPersianGate(ctx, x, goal) {
+    const cx = x + 30;
+    const baseY = goal.y + goal.h;
+    const hover = Math.sin(Date.now() / 650) * 1.8;
+
+    ctx.save();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const archW = 32;
+    const archY = baseY - 38 + hover;
+
+    // Zwei Säulen
+    ctx.strokeRect(cx - archW / 2,     archY + 12, 6, 26);
+    ctx.strokeRect(cx + archW / 2 - 6, archY + 12, 6, 26);
+
+    // Hufeisenbogen
+    ctx.beginPath();
+    ctx.moveTo(cx - archW / 2, archY + 22);
+    ctx.quadraticCurveTo(cx - archW / 2 - 3, archY + 10, cx, archY + 2);
+    ctx.quadraticCurveTo(cx + archW / 2 + 3, archY + 10, cx + archW / 2, archY + 22);
+    ctx.stroke();
+
+    // Zwiebelkuppel
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, archY + 2);
+    ctx.quadraticCurveTo(cx - 13, archY - 10, cx, archY - 20);
+    ctx.quadraticCurveTo(cx + 13, archY - 10, cx + 9, archY + 2);
+    ctx.stroke();
+
+    // Knauf auf der Kuppel
+    ctx.beginPath();
+    ctx.moveTo(cx, archY - 20);
+    ctx.lineTo(cx, archY - 28);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, archY - 30, 2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Stern im Bogen
+    ctx.fillStyle = "#fff";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("★", cx, archY + 17 + hover);
+
+    // "ZIEL" blinkend
+    const blink = Math.sin(Date.now() / 400) * 0.3 + 0.7;
+    ctx.globalAlpha = blink;
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("ZIEL", cx, archY - 35 + hover);
+    ctx.globalAlpha = 1;
+
     ctx.restore();
   }
 

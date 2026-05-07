@@ -378,6 +378,58 @@ export const LEVELS = [
     ],
   },
 
+  // Level 9 – Persische Wüste
+  {
+    id: 9,
+    name: "Persische Wüste",
+    theme: "desert",
+    spawnX: 50,
+    spawnY: 300,
+    platforms: [
+      // ─── Sektion 1: Sanddünen-Start ─────────────────────────
+      { x: 0,    y: 370, w: 220, h: 30, surface: "sand" },
+      { x: 255,  y: 340, w: 100, h: 15, surface: "sand" },
+      { x: 400,  y: 370, w: 160, h: 30, surface: "sand" },
+      // ─── Sektion 2: Felsoase ─────────────────────────────────
+      { x: 600,  y: 295, w: 90,  h: 15, surface: "normal" },
+      { x: 730,  y: 230, w: 80,  h: 15, surface: "normal" },
+      { x: 860,  y: 370, w: 145, h: 30, surface: "sand" },
+      // ─── Sektion 3: Tiefe Wüste ──────────────────────────────
+      { x: 870,  y: 365, w: 55,  h: 10, surface: "trampolin" },
+      { x: 1060, y: 295, w: 90,  h: 15, surface: "sand" },
+      { x: 1200, y: 370, w: 355, h: 30, surface: "sand" },
+      // ─── Sektion 4: Persisches Tor ───────────────────────────
+      { x: 1255, y: 365, w: 55,  h: 10, surface: "trampolin" },
+      { x: 1380, y: 245, w: 100, h: 15, surface: "normal" },
+      { x: 1530, y: 305, w: 120, h: 15, surface: "sand" },
+    ],
+    coins: [
+      { x: 295, y: 315 },
+      { x: 470, y: 345 },
+      { x: 635, y: 270 },
+      { x: 760, y: 205 },
+      { x: 905, y: 340 },
+      { x: 1100, y: 270 },
+      { x: 1245, y: 345 },
+      { x: 1300, y: 335 },
+      { x: 1420, y: 220 },
+      { x: 1565, y: 280 },
+    ],
+    learnTriggers: [
+      { x: 450,  y: 340, w: 40, h: 40, factId: "desert_sand",  triggered: false },
+      { x: 740,  y: 200, w: 40, h: 40, factId: "desert_heat",  triggered: false },
+      { x: 880,  y: 330, w: 40, h: 40, factId: "desert_oasis", triggered: false },
+    ],
+    goal: { x: 1550, y: 275, w: 60, h: 30 },
+    worldWidth: 1700,
+    enemies: [
+      { x: 280,  platformY: 340, patrolLeft: 258,  patrolRight: 350,  speed: 1.3 },
+      { x: 870,  platformY: 370, patrolLeft: 865,  patrolRight: 1000, speed: 1.5 },
+      { x: 1070, platformY: 295, patrolLeft: 1063, patrolRight: 1145, speed: 1.2 },
+      { x: 1215, platformY: 370, patrolLeft: 1203, patrolRight: 1550, speed: 1.7 },
+    ],
+  },
+
   // Level 7 – Ninjago Tempel
   {
     id: 7,

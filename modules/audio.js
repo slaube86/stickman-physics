@@ -168,6 +168,7 @@ export class AudioManager {
       walle: this._melodyWallE.bind(this),
       minecraft: this._melodyMinecraft.bind(this),
       clockwork: this._melodyClockwork.bind(this),
+      desert: this._melodyDesert.bind(this),
     };
 
     const melodyFn = melodies[theme] || melodies.normal;
@@ -335,6 +336,102 @@ export class AudioManager {
     ];
 
     const melodyLoop = this._playLoop(notes, 0.25, "triangle");
+
+    return {
+      stop() {
+        running = false;
+        clearInterval(schedulerId);
+        melodyLoop.stop();
+        for (const n of activeNodes) {
+          try {
+            n.stop();
+          } catch {
+            /* bereits gestoppt */
+          }
+        }
+      },
+    };
+  }
+
+  // --- Desert Theme: Hijaz-Maqam + Dumbek-Rhythmus ---
+  _melodyDesert() {
+    let running = true;
+
+    // ── Dumbek-Rhythmus: Dum auf 1, Tek auf 3 ──────────────
+    // 133 BPM (0.45 s/Beat) – gemächlich, wüstenartig
+    const BEAT = 0.45;
+    let nextBeat = this.ctx.currentTime + 0.05;
+    let beatNum = 0;
+    const activeNodes = [];
+
+    const scheduleBeats = () => {
+      if (!running || !this.ctx) return;
+      while (nextBeat < this.ctx.currentTime + 1.2) {
+        const t = nextBeat;
+
+        // Dum – tiefer Basston (Daumen, volle Membran)
+        if (beatNum % 4 === 0) {
+          const dum = this.ctx.createOscillator();
+          const dumEnv = this.ctx.createGain();
+          dum.type = "sine";
+          dum.frequency.setValueAtTime(95, t);
+          dum.frequency.exponentialRampToValueAtTime(52, t + 0.14);
+          dumEnv.gain.setValueAtTime(0.55, t);
+          dumEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.17);
+          dum.connect(dumEnv);
+          dumEnv.connect(this.musicGain);
+          dum.start(t);
+          dum.stop(t + 0.17);
+          activeNodes.push(dum);
+        }
+
+        // Tek – hoher Fingerschlag auf Beat 3
+        if (beatNum % 4 === 2) {
+          const tek = this.ctx.createOscillator();
+          const tekEnv = this.ctx.createGain();
+          tek.type = "triangle";
+          tek.frequency.setValueAtTime(680, t);
+          tek.frequency.exponentialRampToValueAtTime(400, t + 0.045);
+          tekEnv.gain.setValueAtTime(0.2, t);
+          tekEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
+          tek.connect(tekEnv);
+          tekEnv.connect(this.musicGain);
+          tek.start(t);
+          tek.stop(t + 0.055);
+          activeNodes.push(tek);
+        }
+
+        nextBeat += BEAT;
+        beatNum++;
+      }
+    };
+
+    scheduleBeats();
+    const schedulerId = setInterval(scheduleBeats, 100);
+
+    // ── Melodie: Hijaz-Maqam auf D ──────────────────────────
+    // Töne: D4(294) Eb4(311) F#4(370) G4(392) A4(440) Bb4(466) C5(523) D5(587)
+    // Übermäßige Sekunde Eb→F# ist der charakteristische persisch-arabische Klang
+    const notes = [
+      // Phrase 1 – aufsteigend durch die Skala
+      294, 311, 370,  0, 392,  0, 440,  0,
+      // Phrase 2 – Gipfel
+      466,  0, 523,  0, 587,  0,   0,  0,
+      // Phrase 3 – Abstieg
+      587, 523, 466, 440, 392,  0, 370,  0,
+      // Phrase 4 – Rückkehr zum Grundton
+      311, 294,   0,  0, 294,  0,   0,  0,
+      // Phrase 5 – zweite Variation mit Verzierung
+      440,  0, 523, 466, 440,  0, 392, 370,
+      // Phrase 6 – Chromatische Umspielung
+      370, 311, 294, 311, 370,  0,   0,  0,
+      // Phrase 7 – Bogen über die Quinte
+      392, 440, 392, 370, 311, 294,   0,  0,
+      // Phrase 8 – Abschluss auf D
+      294,  0, 311,  0, 370,  0, 294,  0,
+    ];
+
+    const melodyLoop = this._playLoop(notes, 0.225, "sine");
 
     return {
       stop() {

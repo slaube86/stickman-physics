@@ -111,6 +111,21 @@ const FACTS = {
     title: "Zahnrad-Übersetzung",
     text: "Kleine Zahnräder drehen sich schneller als große – aber mit weniger Kraft! Große Zahnräder sind langsamer, dafür stärker. Das nennt man Übersetzungsverhältnis!",
   },
+  desert_sand: {
+    icon: "🏜️",
+    title: "Sand & Dämpfung",
+    text: "Sand dämpft deine Bewegung! Die losen Körner verteilen deine Energie beim Aufprall und bremsen dich stärker als fester Boden. Deshalb ist Laufen in der Wüste so anstrengend.",
+  },
+  desert_heat: {
+    icon: "☀️",
+    title: "Wüstenhitze & Strahlung",
+    text: "Sand erhitzt sich extrem schnell – und kühlt nachts genauso schnell ab! Er speichert kaum Wärme. Die Sonne schickt Infrarotstrahlung, die den Sand aufheizt. Steine und Wasser speichern Wärme viel besser.",
+  },
+  desert_oasis: {
+    icon: "🌴",
+    title: "Oase & Kapillarwirkung",
+    text: "Wasser steigt in der Oase durch Kapillarwirkung nach oben – wie in einem Schwamm! Unterirdisches Grundwasser drückt durch feinen Sand an die Oberfläche und lässt Palmen in der heißen Wüste wachsen.",
+  },
 };
 
 export class LearnSystem {

@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=19";
+import { Stickman } from "./modules/stickman.js?v=22";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=19";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=19";
-import { LearnSystem } from "./modules/learn.js?v=19";
-import { UI, setupTouchControls } from "./modules/ui.js?v=19";
-import { AudioManager } from "./modules/audio.js?v=19";
+} from "./modules/physics.js?v=22";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=22";
+import { LearnSystem } from "./modules/learn.js?v=22";
+import { UI, setupTouchControls } from "./modules/ui.js?v=22";
+import { AudioManager } from "./modules/audio.js?v=22";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -183,108 +183,188 @@ document.addEventListener("keyup", (e) => {
     keys.jump = false;
 });
 
-// ─── Level-Select: Box-Positionen berechnen ───────────────
-function getLevelBoxes() {
-  const total = getTotalLevels();
-  const boxW = 80;
-  const boxH = 80;
-  const gap = 20;
-  const cols = Math.min(total, 4);
-  const totalW = cols * boxW + (cols - 1) * gap;
-  const startX = (GAME_W - totalW) / 2;
-  const startY = 160;
-  const boxes = [];
-  for (let i = 0; i < total; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    boxes.push({
-      id: i + 1,
-      x: startX + col * (boxW + gap),
-      y: startY + row * (boxH + gap),
-      w: boxW,
-      h: boxH,
-    });
-  }
-  return boxes;
-}
+// ─── Weltkarte: Knoten-Positionen & Farben ────────────────
+const MAP_NODES = [
+  { id: 1, x:  75, y: 325, theme: "normal",   name: "Tutorial"   },
+  { id: 2, x: 162, y: 195, theme: "ice",       name: "Eishöhle"   },
+  { id: 3, x: 258, y: 290, theme: "normal",    name: "Sprungturm" },
+  { id: 4, x: 368, y: 342, theme: "walle",     name: "Wall-E"     },
+  { id: 5, x: 455, y: 208, theme: "minecraft", name: "Minecraft"  },
+  { id: 6, x: 528, y:  72, theme: "space",     name: "Weltraum"   },
+  { id: 7, x: 638, y: 198, theme: "ninjago",   name: "Ninjago"    },
+  { id: 8, x: 712, y: 110, theme: "clockwork", name: "Clockwork"  },
+  { id: 9, x: 752, y: 312, theme: "desert",    name: "Wüste"      },
+];
+
+const NODE_RGB = {
+  normal:    [160, 160, 160],
+  ice:       [100, 185, 225],
+  walle:     [165, 120,  48],
+  minecraft: [ 78, 165,  58],
+  space:     [ 40,  60, 120],
+  ninjago:   [155,  22,  22],
+  clockwork: [185, 132,  58],
+  desert:    [215, 142,  38],
+};
 
 function drawLevelSelect() {
-  ctx.fillStyle = "#000";
+  // ── Hintergrund ──────────────────────────────────────────
+  ctx.fillStyle = "#070b12";
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 28px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("Level auswählen", GAME_W / 2, 80);
+  // Biom-Leuchtflecken pro Level
+  for (const node of MAP_NODES) {
+    const [r, g, b] = NODE_RGB[node.theme] || [120, 120, 120];
+    const grad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 95);
+    grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+  }
 
-  ctx.fillStyle = "#888";
-  ctx.font = "14px sans-serif";
-  ctx.fillText("Tippe auf ein Level oder drücke die Zahl", GAME_W / 2, 115);
+  // Vignette (Kanten abdunkeln)
+  const vig = ctx.createRadialGradient(
+    GAME_W / 2, GAME_H / 2, 80,
+    GAME_W / 2, GAME_H / 2, GAME_W * 0.75,
+  );
+  vig.addColorStop(0, "rgba(0,0,0,0)");
+  vig.addColorStop(1, "rgba(0,0,0,0.65)");
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-  const boxes = getLevelBoxes();
-  for (const box of boxes) {
-    const unlocked = box.id <= maxLevelUnlocked;
-    const completed = box.id < maxLevelUnlocked;
+  // ── Pfade zwischen den Knoten ─────────────────────────────
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 6]);
+  for (let i = 0; i < MAP_NODES.length - 1; i++) {
+    const a = MAP_NODES[i];
+    const b = MAP_NODES[i + 1];
+    const unlocked = b.id <= maxLevelUnlocked;
 
-    // Box
-    ctx.strokeStyle = unlocked ? "#fff" : "#444";
-    ctx.lineWidth = unlocked ? 1.5 : 1;
-    ctx.strokeRect(box.x, box.y, box.w, box.h);
+    // Leicht gebogener Pfad (senkrecht versetzter Kontrollpunkt)
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const cpx = mx + (-dy / len) * 18;
+    const cpy = my + ( dx / len) * 18;
 
-    // Level-Nummer
-    ctx.fillStyle = unlocked ? "#fff" : "#444";
-    ctx.font = "bold 24px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(box.id, box.x + box.w / 2, box.y + 35);
+    ctx.strokeStyle = unlocked
+      ? "rgba(255,255,255,0.30)"
+      : "rgba(255,255,255,0.07)";
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(cpx, cpy, b.x, b.y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
 
-    // Level-Name
-    const lvlData = loadLevel(box.id);
-    if (lvlData) {
-      ctx.font = "11px sans-serif";
-      ctx.fillText(lvlData.name, box.x + box.w / 2, box.y + 55);
+  // ── Knoten ────────────────────────────────────────────────
+  const R = 18;
+  for (const node of MAP_NODES) {
+    const unlocked  = node.id <= maxLevelUnlocked;
+    const completed = node.id < maxLevelUnlocked;
+    const [r, g, b] = NODE_RGB[node.theme] || [120, 120, 120];
+
+    // Pulsierender Ring für das aktuell ausgewählte Level
+    if (node.id === currentLevelId && unlocked) {
+      const pulse = Math.sin(Date.now() / 380) * 4;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, R + 8 + pulse, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r},${g},${b},0.22)`;
+      ctx.fill();
     }
 
-    // Haken bei abgeschlossenen Levels
-    if (completed) {
+    // Innenfläche
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, R, 0, Math.PI * 2);
+    ctx.fillStyle = unlocked
+      ? `rgba(${r},${g},${b},0.28)`
+      : "rgba(18,18,22,0.88)";
+    ctx.fill();
+
+    // Rand
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, R, 0, Math.PI * 2);
+    ctx.strokeStyle = unlocked ? `rgb(${r},${g},${b})` : "#333";
+    ctx.lineWidth = unlocked ? 2 : 1;
+    ctx.stroke();
+
+    // Level-Nummer (nur bei entsperrten; bei gesperrten kommt Schloss)
+    if (unlocked) {
       ctx.fillStyle = "#fff";
-      ctx.font = "16px sans-serif";
-      ctx.fillText("✓", box.x + box.w / 2, box.y + 75);
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(node.id, node.x, node.y + 0.5);
+    } else {
+      ctx.font = "13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🔒", node.x, node.y + 0.5);
     }
 
-    // Schloss bei gesperrten Levels
-    if (!unlocked) {
-      ctx.fillStyle = "#444";
-      ctx.font = "16px sans-serif";
-      ctx.fillText("🔒", box.x + box.w / 2, box.y + 75);
+    // Name-Label unterhalb
+    ctx.fillStyle = unlocked ? "rgba(255,255,255,0.65)" : "#282828";
+    ctx.font = "9px sans-serif";
+    ctx.textBaseline = "top";
+    ctx.fillText(node.name, node.x, node.y + R + 3);
+
+    // Häkchen oberhalb bei abgeschlossenen Levels
+    if (completed) {
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.font = "bold 11px sans-serif";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("✓", node.x, node.y - R - 1);
     }
   }
 
-  ctx.fillStyle = "#555";
-  ctx.font = "13px sans-serif";
+  // ── Titel ─────────────────────────────────────────────────
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  ctx.font = "bold 20px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("ESC = Zurück", GAME_W / 2, GAME_H - 20);
+  ctx.textBaseline = "top";
+  ctx.fillText("WELTKARTE", GAME_W / 2, 10);
+
+  // Dekorative Unterlinie
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1;
+  const tw = ctx.measureText("WELTKARTE").width;
+  ctx.beginPath();
+  ctx.moveTo(GAME_W / 2 - tw / 2, 34);
+  ctx.lineTo(GAME_W / 2 + tw / 2, 34);
+  ctx.stroke();
+
+  // Hinweiszeile unten
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.font = "11px sans-serif";
+  ctx.textBaseline = "bottom";
+  ctx.fillText(
+    "ESC = Zurück  ·  Zahl drücken zum Auswählen",
+    GAME_W / 2,
+    GAME_H - 6,
+  );
+
+  // Kartenrahmen
+  ctx.strokeStyle = "rgba(255,255,255,0.07)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(3, 3, GAME_W - 6, GAME_H - 6);
 }
 
 // Touch/Klick auf Canvas
 canvas.addEventListener("click", (e) => {
   if (gameState === "levelSelect") {
-    // Klick-Position relativ zum Canvas berechnen
     const rect = canvas.getBoundingClientRect();
     const scaleX = GAME_W / rect.width;
     const scaleY = GAME_H / rect.height;
     const clickX = (e.clientX - rect.left) * scaleX;
     const clickY = (e.clientY - rect.top) * scaleY;
 
-    const boxes = getLevelBoxes();
-    for (const box of boxes) {
-      if (
-        clickX >= box.x &&
-        clickX <= box.x + box.w &&
-        clickY >= box.y &&
-        clickY <= box.y + box.h &&
-        box.id <= maxLevelUnlocked
-      ) {
-        startLevel(box.id);
+    for (const node of MAP_NODES) {
+      const dx = clickX - node.x;
+      const dy = clickY - node.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= 22 && node.id <= maxLevelUnlocked) {
+        startLevel(node.id);
         return;
       }
     }
