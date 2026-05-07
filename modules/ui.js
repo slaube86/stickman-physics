@@ -698,8 +698,8 @@ export class UI {
     ctx.restore();
   }
 
-  // Gegner zeichnen – Skulkin-Skelett-Ninjas mit X-Augen
-  drawEnemies(ctx, enemies, camera) {
+  // Gegner zeichnen – je nach Theme unterschiedliche Figuren
+  drawEnemies(ctx, enemies, camera, theme) {
     for (const e of enemies) {
       if (e.state === "dead") continue;
 
@@ -722,9 +722,16 @@ export class UI {
 
       ctx.strokeStyle = "#fff";
       ctx.fillStyle = "#fff";
-      ctx.lineWidth = 2;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
+
+      if (theme === "desert") {
+        this._drawScorpion(ctx, e);
+        ctx.restore();
+        continue;
+      }
+
+      ctx.lineWidth = 2;
 
       const h = e.h;
       const hr = 7;
@@ -811,6 +818,86 @@ export class UI {
       }
 
       ctx.restore();
+    }
+  }
+
+  // Skorpion (Wüsten-Level Gegner)
+  // Koordinatensystem: (0,0) = Bodenmitte, y wächst nach oben (negativ = hoch)
+  // facing=+1 → Bewegung nach rechts, Scheren bei +x, Schwanz bei -x
+  _drawScorpion(ctx, e) {
+    const knocked = e.state === "knocked";
+
+    // ── Körper (Abdomen + Cephalothorax) ──────────────────────
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, -18, 6, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(5, -17, 3, 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // ── Schwanz (Telson, nach oben gebogen) ───────────────────
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, -24);
+    ctx.quadraticCurveTo(-16, -32, -10, -37);
+    ctx.stroke();
+
+    // Giftblase
+    ctx.beginPath();
+    ctx.arc(-10, -36, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Stachel
+    ctx.beginPath();
+    ctx.moveTo(-9, -35);
+    ctx.lineTo(-6, -38);
+    ctx.stroke();
+
+    if (knocked) {
+      // ── Scheren aufgerissen ──────────────────────────────────
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(5, -22); ctx.lineTo(13, -28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(13, -28); ctx.lineTo(17, -24); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(13, -28); ctx.lineTo(16, -32); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(5, -14); ctx.lineTo(13, -8);  ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(13,  -8); ctx.lineTo(17, -12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(13,  -8); ctx.lineTo(16,  -4); ctx.stroke();
+
+      // ── Beine ausgestreckt ───────────────────────────────────
+      ctx.lineWidth = 1.3;
+      for (const lx of [-5, -2, 1, 4]) {
+        ctx.beginPath();
+        ctx.moveTo(lx, -10);
+        ctx.lineTo(lx - 7, -4);
+        ctx.lineTo(lx - 6,  0);
+        ctx.stroke();
+      }
+    } else {
+      // ── Scheren (Chelae) ─────────────────────────────────────
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(6, -22); ctx.lineTo(12, -26); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(12, -26); ctx.lineTo(15, -23); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(12, -26); ctx.lineTo(15, -29); ctx.stroke();
+
+      ctx.beginPath(); ctx.moveTo(6, -14); ctx.lineTo(12, -11); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(12, -11); ctx.lineTo(15, -14); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(12, -11); ctx.lineTo(15,  -8); ctx.stroke();
+
+      // ── Beine (4 Stück, Lauf-Animation) ──────────────────────
+      ctx.lineWidth = 1.3;
+      const sway = Math.sin(Date.now() / 200 + e.x * 0.08) * 2;
+      const legXs = [-5, -2, 1, 4];
+      for (let i = 0; i < legXs.length; i++) {
+        const lx = legXs[i];
+        const sw = i % 2 === 0 ? sway : -sway;
+        ctx.beginPath();
+        ctx.moveTo(lx, -10);
+        ctx.lineTo(lx - 4 + sw, -5);
+        ctx.lineTo(lx - 3 + sw,  0);
+        ctx.stroke();
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=22";
+import { Stickman } from "./modules/stickman.js?v=23";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=22";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=22";
-import { LearnSystem } from "./modules/learn.js?v=22";
-import { UI, setupTouchControls } from "./modules/ui.js?v=22";
-import { AudioManager } from "./modules/audio.js?v=22";
+} from "./modules/physics.js?v=23";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=23";
+import { LearnSystem } from "./modules/learn.js?v=23";
+import { UI, setupTouchControls } from "./modules/ui.js?v=23";
+import { AudioManager } from "./modules/audio.js?v=23";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -617,7 +617,7 @@ function render() {
   ui.drawCoins(ctx, level.coins, camera);
   ui.drawLearnTriggers(ctx, level.learnTriggers, camera);
   ui.drawGoal(ctx, level.goal, camera, level.theme);
-  ui.drawEnemies(ctx, enemies, camera);
+  ui.drawEnemies(ctx, enemies, camera, level.theme);
 
   // Stickman zeichnen (relativ zur Kamera)
   ctx.save();
