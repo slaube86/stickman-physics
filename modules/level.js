@@ -430,6 +430,77 @@ export const LEVELS = [
     ],
   },
 
+  // Level 10 – Skatepark
+  {
+    id: 10,
+    name: "Skatepark",
+    theme: "skatepark",
+    spawnX: 50,
+    spawnY: 310,
+    platforms: [
+      // ─── Sektion 1: Anfahrt ──────────────────────────────────
+      { x: 0,   y: 370, w: 380, h: 30, surface: "normal" },
+      // Trampolin-Absprung zum Halfpipe-Lip
+      { x: 375, y: 362, w: 55,  h: 10, surface: "trampolin" },
+
+      // ─── Sektion 2: Halfpipe ─────────────────────────────────
+      // Linker Lip (Einstieg)
+      { x: 385, y: 260, w: 75,  h: 10, surface: "normal" },
+      // Linke Wand – steil (y=270 → y=348 über 60px)
+      { x: 450, y: 270, w: 60,  slope: 1.3,  surface: "ice" },
+      // Linke Wand – sanft (y=348 → y=365 über 50px)
+      { x: 510, y: 348, w: 50,  slope: 0.34, surface: "ice" },
+      // Flacher Boden
+      { x: 560, y: 365, w: 80,  h: 8,        surface: "ice" },
+      // Rechte Wand – sanft (y=365 → y=348 über 50px)
+      { x: 640, y: 365, w: 50,  slope: -0.34, surface: "ice" },
+      // Rechte Wand – steil (y=348 → y=270 über 60px)
+      { x: 690, y: 348, w: 60,  slope: -1.3,  surface: "ice" },
+      // Rechter Lip (Ausfahrt)
+      { x: 750, y: 260, w: 75,  h: 10, surface: "normal" },
+
+      // ─── Sektion 3: Rails ────────────────────────────────────
+      { x: 825,  y: 370, w: 600, h: 30, surface: "normal" },
+      // Stufe 1 vor Rail
+      { x: 870,  y: 345, w: 80,  h: 10, surface: "normal" },
+      // Rail 1 (Schiene – Eis, sehr dünn)
+      { x: 960,  y: 328, w: 150, h: 5,  surface: "ice" },
+      // Stufe 2
+      { x: 1175, y: 335, w: 80,  h: 10, surface: "normal" },
+      // Rail 2 (höher)
+      { x: 1260, y: 308, w: 160, h: 5,  surface: "ice" },
+
+      // ─── Sektion 4: Street / Ziel ────────────────────────────
+      { x: 1425, y: 370, w: 600, h: 30, surface: "normal" },
+      { x: 1460, y: 360, w: 55,  h: 10, surface: "trampolin" },
+      { x: 1560, y: 295, w: 100, h: 15, surface: "normal" },
+      { x: 1700, y: 360, w: 55,  h: 10, surface: "trampolin" },
+      { x: 1810, y: 268, w: 120, h: 15, surface: "normal" },
+    ],
+    coins: [
+      { x: 430,  y: 235 },  // über linkem Lip
+      { x: 480,  y: 320 },  // linke steile Wand
+      { x: 530,  y: 348 },  // linke sanfte Wand
+      { x: 600,  y: 350 },  // Boden
+      { x: 660,  y: 348 },  // rechte sanfte Wand
+      { x: 710,  y: 310 },  // rechte steile Wand
+      { x: 760,  y: 235 },  // über rechtem Lip
+      { x: 1000, y: 304 },  // Rail 1
+      { x: 1090, y: 304 },  // Rail 1 Ende
+      { x: 1295, y: 284 },  // Rail 2
+      { x: 1400, y: 284 },  // Rail 2 Ende
+      { x: 1600, y: 270 },  // nach Kicker
+      { x: 1850, y: 243 },  // Zielbereich
+    ],
+    learnTriggers: [
+      { x: 490,  y: 288, w: 40, h: 40, factId: "skate_halfpipe", triggered: false },
+      { x: 990,  y: 298, w: 40, h: 40, factId: "skate_rail",     triggered: false },
+      { x: 600,  y: 318, w: 40, h: 40, factId: "skate_momentum", triggered: false },
+    ],
+    goal: { x: 1830, y: 238, w: 60, h: 30 },
+    worldWidth: 2050,
+  },
+
   // Level 7 – Ninjago Tempel
   {
     id: 7,

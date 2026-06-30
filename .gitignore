@@ -1,0 +1,4 @@
+# Ignore the ask-code script
+ask-code.sh
+ask-code-v2.sh
+ask-smart.sh

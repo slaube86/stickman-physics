@@ -13,28 +13,32 @@ export const SURFACES = {
   trampolin: { friction: 0.70, bounce: 1.3, label: 'Trampolin' }
 };
 
-// applyGravity kann jetzt einen individuellen Wert bekommen
 export function applyGravity(player, gravity = DEFAULT_GRAVITY) {
   player.vy += gravity;
 }
 
+// Geschwindigkeit nur beim aktiven Tastendruck begrenzen –
+// physikalisch erzeugter Schwung (Halfpipe) bleibt erhalten.
 export function applyMovement(player, keys) {
   if (keys.left) {
     player.vx -= ACCELERATION;
+    if (player.vx < -MAX_SPEED) player.vx = -MAX_SPEED;
   }
   if (keys.right) {
     player.vx += ACCELERATION;
+    if (player.vx > MAX_SPEED) player.vx = MAX_SPEED;
   }
-
-  // Geschwindigkeit begrenzen
-  if (player.vx > MAX_SPEED) player.vx = MAX_SPEED;
-  if (player.vx < -MAX_SPEED) player.vx = -MAX_SPEED;
 }
 
 export function applyFriction(player, surface = SURFACES.normal) {
-  if (player.onGround) {
-    player.vx *= surface.friction;
-    // Sehr kleine Geschwindigkeiten auf 0 setzen
+  if (!player.onGround) return;
+  const f = surface.friction;
+  if (player._onSlope) {
+    // Auf Schrägen: Reibung auf beide Komponenten (korrekte Physik)
+    player.vx *= f;
+    player.vy *= f;
+  } else {
+    player.vx *= f;
     if (Math.abs(player.vx) < 0.3) player.vx = 0;
   }
 }
@@ -44,20 +48,62 @@ export function applyPosition(player) {
   player.y += player.vy;
 }
 
+// ─── Interne Hilfsfunktion: AABB für Schrägplattformen ──────
+function _slopeAABB(plat) {
+  const y0 = plat.y;
+  const y1 = plat.y + plat.slope * plat.w;
+  const minY = Math.min(y0, y1);
+  return { x: plat.x, y: minY, w: plat.w, h: Math.abs(y0 - y1) + 28 };
+}
+
 /**
  * AABB-Kollisionserkennung und -auflösung
- * Gibt ein Array von Events zurück (z.B. "landed", "bounce")
+ * Unterstützt jetzt auch Schrägplattformen mit `slope`-Eigenschaft.
  */
 export function resolveCollisions(player, platforms) {
   const events = [];
   player.onGround = false;
+  player._onSlope  = null;
+  player._slopeAngle = 0;
 
   for (const plat of platforms) {
+    // ── Schrägplattform ──────────────────────────────────────
+    if (plat.slope !== undefined) {
+      if (!aabbCheck(player.getBounds(), _slopeAABB(plat))) continue;
+
+      const pb  = player.getBounds();
+      const pcx = Math.max(plat.x, Math.min(plat.x + plat.w, pb.x + pb.w / 2));
+      if (pcx < plat.x || pcx > plat.x + plat.w) continue;
+
+      const surfY       = plat.y + plat.slope * (pcx - plat.x);
+      const playerBottom = pb.y + pb.h;
+      const margin      = 15 + Math.abs(player.vy);
+
+      if (playerBottom >= surfY && playerBottom <= surfY + margin && player.vy >= -1) {
+        player.y = surfY - player.h;
+
+        // Geschwindigkeit entlang der Neigungstangente umlenken
+        const s   = plat.slope;
+        const mag = Math.sqrt(1 + s * s);
+        const tx  = 1 / mag;
+        const ty  = s / mag;
+        const vt  = player.vx * tx + player.vy * ty;
+        player.vx = vt * tx;
+        player.vy = vt * ty;
+
+        player.onGround  = true;
+        player._onSlope  = plat;
+        player._slopeAngle = Math.atan2(s, 1);
+        events.push({ type: 'landed', platform: plat });
+      }
+      continue;
+    }
+
+    // ── Normale AABB-Plattform ───────────────────────────────
     if (!aabbCheck(player.getBounds(), plat)) continue;
 
     const pb = player.getBounds();
 
-    // Überlappung berechnen
     const overlapLeft   = (pb.x + pb.w) - plat.x;
     const overlapRight  = (plat.x + plat.w) - pb.x;
     const overlapTop    = (pb.y + pb.h) - plat.y;
@@ -67,9 +113,7 @@ export function resolveCollisions(player, platforms) {
     const minOverlapY = Math.min(overlapTop, overlapBottom);
 
     if (minOverlapY < minOverlapX) {
-      // Vertikale Kollision
       if (overlapTop < overlapBottom) {
-        // Von oben – Landung
         player.y = plat.y - player.h;
         if (plat.surface === 'trampolin' && player.vy > 2) {
           const bounce = SURFACES.trampolin.bounce || 1.3;
@@ -81,12 +125,10 @@ export function resolveCollisions(player, platforms) {
           events.push({ type: 'landed', platform: plat });
         }
       } else {
-        // Von unten – Kopf gestoßen
         player.y = plat.y + plat.h;
         player.vy = 0;
       }
     } else {
-      // Horizontale Kollision
       if (overlapLeft < overlapRight) {
         player.x = plat.x - player.w;
       } else {
@@ -109,34 +151,34 @@ function aabbCheck(a, b) {
   );
 }
 
-/**
- * Kinetische Energie berechnen (für Anzeige)
- */
 export function kineticEnergy(mass, vx, vy) {
   const v = Math.sqrt(vx * vx + vy * vy);
   return 0.5 * mass * v * v;
 }
 
-/**
- * Potenzielle Energie: E = m * g * h
- */
 export function potentialEnergy(mass, height, gravity = DEFAULT_GRAVITY) {
   return mass * gravity * Math.max(0, height);
 }
 
-/**
- * Gibt den Oberflächen-Typ der Plattform zurück, auf der der Spieler steht
- */
 export function getCurrentSurface(player, platforms) {
   for (const plat of platforms) {
-    // Prüfe ob Spieler direkt auf dieser Plattform steht
-    if (
-      player.onGround &&
-      player.x + player.w > plat.x &&
-      player.x < plat.x + plat.w &&
-      Math.abs((player.y + player.h) - plat.y) < 2
-    ) {
-      return SURFACES[plat.surface] || SURFACES.normal;
+    if (!player.onGround) continue;
+
+    if (plat.slope !== undefined) {
+      const pcx = player.x + player.w / 2;
+      if (pcx < plat.x || pcx > plat.x + plat.w) continue;
+      const surfY = plat.y + plat.slope * (pcx - plat.x);
+      if (Math.abs((player.y + player.h) - surfY) < 6) {
+        return SURFACES[plat.surface] || SURFACES.normal;
+      }
+    } else {
+      if (
+        player.x + player.w > plat.x &&
+        player.x < plat.x + plat.w &&
+        Math.abs((player.y + player.h) - plat.y) < 2
+      ) {
+        return SURFACES[plat.surface] || SURFACES.normal;
+      }
     }
   }
   return SURFACES.normal;

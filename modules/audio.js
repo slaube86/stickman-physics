@@ -169,6 +169,7 @@ export class AudioManager {
       minecraft: this._melodyMinecraft.bind(this),
       clockwork: this._melodyClockwork.bind(this),
       desert: this._melodyDesert.bind(this),
+      skatepark: this._melodySkatepark.bind(this),
     };
 
     const melodyFn = melodies[theme] || melodies.normal;
@@ -447,6 +448,23 @@ export class AudioManager {
         }
       },
     };
+  }
+
+  // --- Skatepark Theme: druckvoller Punk-Chiptune ---
+  _melodySkatepark() {
+    // Schnelle 8th-notes, A-Moll, aggressive square-wave
+    // 160 BPM → 0.375s pro Viertel → 0.1875s pro Achtel ≈ 0.19s
+    const notes = [
+      // Riff 1 – treibend aufwärts
+      440, 440, 523, 0,   587, 0,   659, 523,
+      // Riff 2 – kurze Pause, dann Druck
+      440, 523, 587, 659, 523, 440, 0,   0,
+      // Riff 3 – höher hinaus
+      659, 659, 784, 0,   880, 0,   784, 659,
+      // Riff 4 – Auflösung zurück
+      587, 523, 440, 494, 523, 440, 392, 0,
+    ];
+    return this._playLoop(notes, 0.12, "square");
   }
 
   _playLoop(notes, noteLen, waveType) {

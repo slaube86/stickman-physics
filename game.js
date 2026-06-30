@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=23";
+import { Stickman } from "./modules/stickman.js?v=24";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=23";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=23";
-import { LearnSystem } from "./modules/learn.js?v=23";
-import { UI, setupTouchControls } from "./modules/ui.js?v=23";
-import { AudioManager } from "./modules/audio.js?v=23";
+} from "./modules/physics.js?v=24";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=24";
+import { LearnSystem } from "./modules/learn.js?v=24";
+import { UI, setupTouchControls } from "./modules/ui.js?v=24";
+import { AudioManager } from "./modules/audio.js?v=24";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -194,6 +194,7 @@ const MAP_NODES = [
   { id: 7, x: 638, y: 198, theme: "ninjago",   name: "Ninjago"    },
   { id: 8, x: 712, y: 110, theme: "clockwork", name: "Clockwork"  },
   { id: 9, x: 752, y: 312, theme: "desert",    name: "Wüste"      },
+  { id: 10, x: 690, y: 355, theme: "skatepark", name: "Skatepark"  },
 ];
 
 const NODE_RGB = {
@@ -205,6 +206,7 @@ const NODE_RGB = {
   ninjago:   [155,  22,  22],
   clockwork: [185, 132,  58],
   desert:    [215, 142,  38],
+  skatepark: [180,  60, 220],
 };
 
 function drawLevelSelect() {
@@ -632,6 +634,8 @@ function render() {
     player.drawNinja(ctx);
   } else if (level.theme === "clockwork") {
     player.drawEngineer(ctx);
+  } else if (level.theme === "skatepark") {
+    player.drawSkater(ctx);
   } else {
     player.draw(ctx);
   }

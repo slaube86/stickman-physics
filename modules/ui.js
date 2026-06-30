@@ -197,6 +197,72 @@ export class UI {
       drawDune(1830, GAME_H, 260,  80);
 
       ctx.restore();
+    } else if (theme === "skatepark") {
+      // Abendlicher Stadthimmel: dunkelblau → lila
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME_H);
+      skyGrad.addColorStop(0,    "#0d0d1a");
+      skyGrad.addColorStop(0.55, "#1a0f2e");
+      skyGrad.addColorStop(1,    "#0d1a26");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Neon-Glühpunkte (Stadtlichter im Hintergrund)
+      if (!level._neonLights) {
+        level._neonLights = Array.from({ length: 18 }, () => ({
+          x: Math.random() * GAME_W * 2.5,
+          y: 180 + Math.random() * 180,
+          r: Math.random() * 2 + 1,
+          color: ["#ff00ff", "#00ffff", "#ff4444", "#ffcc00", "#44ff88"][Math.floor(Math.random() * 5)],
+        }));
+      }
+
+      // Gebäude-Silhouetten (Parallax)
+      const parallax = camera * 0.18;
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = "#111";
+
+      const drawBuilding = (px, baseY, w, h) => {
+        const sx = px - parallax;
+        if (sx + w < -10 || sx > GAME_W + 10) return;
+        ctx.fillRect(sx, baseY - h, w, h);
+        // Fensterreihen
+        for (let row = 0; row < Math.floor(h / 16); row++) {
+          for (let col = 0; col < Math.floor(w / 12); col++) {
+            if (Math.random() < 0.55) {
+              ctx.globalAlpha = 0.18;
+              ctx.fillStyle = "#ffffaa";
+              ctx.fillRect(sx + col * 12 + 3, baseY - h + row * 16 + 5, 6, 7);
+              ctx.fillStyle = "#111";
+            }
+          }
+        }
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = "#111";
+      };
+
+      drawBuilding(80,  GAME_H, 70,  140);
+      drawBuilding(200, GAME_H, 50,  100);
+      drawBuilding(320, GAME_H, 90,  180);
+      drawBuilding(470, GAME_H, 60,  120);
+      drawBuilding(620, GAME_H, 80,  160);
+      drawBuilding(770, GAME_H, 55,  110);
+      drawBuilding(900, GAME_H, 100, 200);
+
+      ctx.restore();
+
+      // Neon-Punkte
+      ctx.save();
+      for (const n of level._neonLights) {
+        const sx = n.x - parallax;
+        if (sx < -10 || sx > GAME_W + 10) continue;
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = n.color;
+        ctx.beginPath();
+        ctx.arc(sx, n.y, n.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     } else {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, GAME_W, GAME_H);
@@ -215,15 +281,39 @@ export class UI {
       // Außerhalb des Sichtfelds? Überspringen
       if (x + p.w < -50 || x > GAME_W + 50) continue;
 
-      // Oberkante als Hauptlinie
+      // ── Schrägplattform (Halfpipe-Wände) ───────────────────
+      if (p.slope !== undefined) {
+        const y0 = p.y;
+        const y1 = p.y + p.slope * p.w;
+
+        ctx.beginPath();
+        ctx.moveTo(x,        y0);
+        ctx.lineTo(x + p.w,  y1);
+        ctx.stroke();
+
+        if (p.surface === "ice") {
+          // Gestrichelte Parallellinie als Eis-Markierung
+          const dx = p.w, dy = y1 - y0;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          const nx = (-dy / len) * 4;
+          const ny = ( dx / len) * 4;
+          ctx.setLineDash([4, 5]);
+          ctx.beginPath();
+          ctx.moveTo(x        + nx, y0 + ny);
+          ctx.lineTo(x + p.w  + nx, y1 + ny);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        continue;
+      }
+
+      // ── Normale (horizontale) Plattform ─────────────────────
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + p.w, y);
       ctx.stroke();
 
-      // Bei speziellen Oberflächen: Markierung
       if (p.surface === "ice") {
-        // Gestrichelte Linie darunter
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
         ctx.moveTo(x, y + 4);
@@ -231,7 +321,6 @@ export class UI {
         ctx.stroke();
         ctx.setLineDash([]);
       } else if (p.surface === "sand") {
-        // Gepunktete Linie darunter
         ctx.setLineDash([2, 3]);
         ctx.beginPath();
         ctx.moveTo(x, y + 4);
@@ -239,7 +328,6 @@ export class UI {
         ctx.stroke();
         ctx.setLineDash([]);
       } else if (p.surface === "trampolin") {
-        // Zickzack-Linie
         ctx.beginPath();
         for (let fx = x; fx < x + p.w; fx += 8) {
           ctx.lineTo(fx, y + ((fx / 8) % 2 === 0 ? 3 : 7));

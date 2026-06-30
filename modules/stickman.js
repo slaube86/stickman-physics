@@ -52,6 +52,10 @@ export class Stickman {
       this.animFrame = 0;
       this.animTimer = 0;
     }
+
+    // Skateboard-Rad-Rotation: akkumuliert aus echter Geschwindigkeit
+    if (this._wheelAngle === undefined) this._wheelAngle = 0;
+    this._wheelAngle += this.vx * 0.28;
   }
 
   draw(ctx) {
@@ -474,6 +478,136 @@ export class Stickman {
     ctx.moveTo(0, bodyBottom);
     ctx.lineTo(6 + legSwing.rightX, bodyBottom + limbLength + legSwing.rightY);
     ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // Skater-Skin für das Skatepark-Level
+  drawSkater(ctx) {
+    ctx.save();
+    ctx.translate(this.x + this.w / 2, this.y + this.h);
+    ctx.scale(this.facing, 1);
+
+    // ── Lean: Körper neigt sich in Fahrtrichtung ─────────────
+    const lean = Math.max(-0.2, Math.min(0.2, this.vx * 0.045));
+    ctx.rotate(lean);
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.fillStyle = "#ffffff";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const headRadius = 8;
+    const headCY = -this.h + headRadius;
+    const inAir = this.state === "jump" || this.state === "fall";
+
+    // ── Skateboard ───────────────────────────────────────────
+    // Slope-Neigung auf dem Board wenn auf Schräge, sonst Ollie-Tilt
+    const slopeAngle = this._slopeAngle || 0;
+    const boardTilt  = inAir ? -0.25 : slopeAngle;
+
+    ctx.save();
+    ctx.rotate(boardTilt);
+
+    // Deck
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-14, -3);
+    ctx.lineTo( 14, -3);
+    ctx.stroke();
+    // Nose & Tail leicht aufgebogen
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-14, -3); ctx.lineTo(-16, -6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo( 14, -3); ctx.lineTo( 16, -6);
+    ctx.stroke();
+
+    // Trucks
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-8, -3); ctx.lineTo(-8, 1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo( 8, -3); ctx.lineTo( 8, 1); ctx.stroke();
+
+    // Räder – drehen sich mit echter vx-basierter Akkumulation
+    const wheelAngle = this._wheelAngle || 0;
+    const wheelR = 3.5;
+    for (const wx of [-8, 8]) {
+      ctx.save();
+      ctx.translate(wx, 1);
+      ctx.rotate(wheelAngle);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, wheelR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-wheelR, 0); ctx.lineTo(wheelR, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore(); // boardTilt
+
+    // ── Körper ───────────────────────────────────────────────
+    const crouch     = (this.state === "run" || this._onSlope) ? 4 : 0;
+    const bodyLength = 15 - crouch;
+    const limbLength = 13;
+    const bodyTop    = headCY + headRadius;
+    const bodyBottom = bodyTop + bodyLength;
+
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, bodyTop);
+    ctx.lineTo(0, bodyBottom);
+    ctx.stroke();
+
+    // ── Arme – weit für Balance, enger beim Stehen ───────────
+    const armY = bodyTop + 3;
+    const armSwing = this._getArmSwing();
+    const spread = inAir ? 5 : Math.abs(this.vx) * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, armY);
+    ctx.lineTo(-10 - spread, armY + limbLength + armSwing.left - 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, armY);
+    ctx.lineTo( 10 + spread, armY + limbLength + armSwing.right - 2);
+    ctx.stroke();
+
+    // ── Beine – Knie gebeugt, Füße auf dem Board ─────────────
+    ctx.beginPath();
+    ctx.moveTo(0, bodyBottom);
+    ctx.lineTo(-5, bodyBottom + 7);
+    ctx.lineTo(-7, bodyBottom + limbLength - 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, bodyBottom);
+    ctx.lineTo( 5, bodyBottom + 7);
+    ctx.lineTo( 7, bodyBottom + limbLength - 2);
+    ctx.stroke();
+
+    // ── Kopf ─────────────────────────────────────────────────
+    ctx.beginPath();
+    ctx.arc(0, headCY, headRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(3, headCY - 2, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Baseball-Cap ─────────────────────────────────────────
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-headRadius + 1, headCY - 3);
+    ctx.lineTo( headRadius + 8, headCY - 3);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, headCY, headRadius, -Math.PI, 0, false);
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, headCY - headRadius, 2, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
   }

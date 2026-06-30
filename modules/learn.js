@@ -126,6 +126,21 @@ const FACTS = {
     title: "Oase & Kapillarwirkung",
     text: "Wasser steigt in der Oase durch Kapillarwirkung nach oben – wie in einem Schwamm! Unterirdisches Grundwasser drückt durch feinen Sand an die Oberfläche und lässt Palmen in der heißen Wüste wachsen.",
   },
+  skate_rail: {
+    icon: "🛹",
+    title: "Rails & Reibung",
+    text: "Auf polierten Stahlschienen ist die Reibung extrem gering – fast wie auf Eis! Skater nutzen das, um lange zu gleiten. Weniger Reibung = mehr Geschwindigkeit über weitere Strecken.",
+  },
+  skate_halfpipe: {
+    icon: "🌊",
+    title: "Halfpipe & Energieumwandlung",
+    text: "In der Halfpipe wandelst du ständig Energie um: Unten hast du maximale Bewegungsenergie, oben an der Lippe maximale Höhenenergie. Das ist Energieerhaltung in Reinform!",
+  },
+  skate_momentum: {
+    icon: "💨",
+    title: "Schwung & Impuls",
+    text: "Impuls = Masse × Geschwindigkeit. Je schneller du in einen Sprung gehst, desto mehr Impuls hast du und desto höher fliegst du! Skater nutzen Schwung, um Tricks weit oben auszuführen.",
+  },
 };
 
 export class LearnSystem {
