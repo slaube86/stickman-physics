@@ -113,10 +113,55 @@ body {
   color: #ccc;
 }
 
+/* Antwortknöpfe für Rechenaufgaben */
+.card-answers {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.card-answers.hidden {
+  display: none;
+}
+
+.card-answer {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 0;
+  padding: 10px 20px;
+  min-width: 58px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.card-answer:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.card-answer.correct {
+  background: #fff;
+  color: #000;
+}
+
+.card-answer.wrong {
+  border-color: #666;
+  color: #666;
+  text-decoration: line-through;
+}
+
 .card-actions {
   display: flex;
   gap: 10px;
   justify-content: center;
+}
+
+.card-btn.hidden {
+  display: none;
 }
 
 .card-play {

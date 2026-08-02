@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=25";
+import { Stickman } from "./modules/stickman.js?v=26";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=25";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=25";
-import { LearnSystem } from "./modules/learn.js?v=25";
-import { UI, setupTouchControls } from "./modules/ui.js?v=25";
-import { AudioManager } from "./modules/audio.js?v=25";
+} from "./modules/physics.js?v=26";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=26";
+import { LearnSystem } from "./modules/learn.js?v=26";
+import { UI, setupTouchControls } from "./modules/ui.js?v=26";
+import { AudioManager } from "./modules/audio.js?v=26";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -64,6 +64,17 @@ let floatTexts = []; // schwebende "+15" / "−1" Texte
 const ui = new UI(canvas);
 const learnSystem = new LearnSystem();
 const audio = new AudioManager();
+
+// Richtig gelöste Rechenaufgabe → Bonuspunkte
+learnSystem.onAnswer = (correct) => {
+  if (correct) {
+    score += 25;
+    audio.playCorrect();
+    if (player) addFloatText(player.x + player.w / 2, player.y - 10, "+25");
+  } else {
+    audio.playWrong();
+  }
+};
 
 // ─── Save / Load ───────────────────────────────────────────
 function saveProgress() {

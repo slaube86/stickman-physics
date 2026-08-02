@@ -468,19 +468,163 @@ export class AudioManager {
     return this._playLoop(notes, 0.12, "square");
   }
 
-  // --- Numbers Theme: hüpfender Abzählreim in C-Dur-Pentatonik ---
+  // --- Numbers Theme: treibender Chiptune mit Bass, Kick und Hi-Hat ---
   _melodyNumbers() {
+    let running = true;
+
+    // Ein Schritt = eine Melodie-Note (0.15 s ≈ 100 BPM in 16teln)
+    const STEP = 0.15;
+    let nextStep = this.ctx.currentTime + 0.05;
+    let stepNum = 0;
+    const activeNodes = [];
+
+    // Akkordfolge Am – G – F – E, je 8 Schritte
+    const bassNotes = [110, 98, 87, 82];
+
+    const scheduleSteps = () => {
+      if (!running || !this.ctx) return;
+
+      while (nextStep < this.ctx.currentTime + 1.2) {
+        const t = nextStep;
+        const step = stepNum % 32;
+        const bar = Math.floor(step / 8);
+
+        // ── Bass: pumpende Achtel ────────────────────────────
+        if (step % 2 === 0) {
+          const bass = this.ctx.createOscillator();
+          const bassEnv = this.ctx.createGain();
+          bass.type = "triangle";
+          bass.frequency.setValueAtTime(bassNotes[bar], t);
+          bassEnv.gain.setValueAtTime(0.38, t);
+          bassEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+          bass.connect(bassEnv);
+          bassEnv.connect(this.musicGain);
+          bass.start(t);
+          bass.stop(t + 0.28);
+          activeNodes.push(bass);
+        }
+
+        // ── Kick auf 1 und 5 ─────────────────────────────────
+        if (step % 8 === 0 || step % 8 === 4) {
+          const kick = this.ctx.createOscillator();
+          const kickEnv = this.ctx.createGain();
+          kick.type = "sine";
+          kick.frequency.setValueAtTime(150, t);
+          kick.frequency.exponentialRampToValueAtTime(48, t + 0.11);
+          kickEnv.gain.setValueAtTime(0.6, t);
+          kickEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+          kick.connect(kickEnv);
+          kickEnv.connect(this.musicGain);
+          kick.start(t);
+          kick.stop(t + 0.14);
+          activeNodes.push(kick);
+        }
+
+        // ── Hi-Hat auf den Zwischenschlägen ──────────────────
+        if (step % 2 === 1) {
+          const hat = this.ctx.createOscillator();
+          const hatEnv = this.ctx.createGain();
+          hat.type = "square";
+          hat.frequency.setValueAtTime(7200, t);
+          hatEnv.gain.setValueAtTime(0.07, t);
+          hatEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+          hat.connect(hatEnv);
+          hatEnv.connect(this.musicGain);
+          hat.start(t);
+          hat.stop(t + 0.03);
+          activeNodes.push(hat);
+        }
+
+        // ── Klatscher auf Schritt 4 und 12 jedes Takts ───────
+        if (step % 8 === 6) {
+          const clap = this.ctx.createOscillator();
+          const clapEnv = this.ctx.createGain();
+          clap.type = "square";
+          clap.frequency.setValueAtTime(2400, t);
+          clap.frequency.exponentialRampToValueAtTime(1100, t + 0.06);
+          clapEnv.gain.setValueAtTime(0.16, t);
+          clapEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          clap.connect(clapEnv);
+          clapEnv.connect(this.musicGain);
+          clap.start(t);
+          clap.stop(t + 0.08);
+          activeNodes.push(clap);
+        }
+
+        nextStep += STEP;
+        stepNum++;
+      }
+    };
+
+    scheduleSteps();
+    const schedulerId = setInterval(scheduleSteps, 100);
+
+    // ── Hook: A-Moll-Pentatonik, synkopiert und eingängig ────
     const notes = [
-      // Zähl-Phrase 1 – Treppe aufwärts (1,2,3,4,5)
-      523, 587, 659, 784, 880, 0,   784, 0,
-      // Phrase 2 – Antwort abwärts
-      880, 784, 659, 587, 523, 0,   587, 0,
-      // Phrase 3 – höher zählen (6,7,8,9,10)
-      659, 784, 880, 1047, 880, 0,  784, 0,
-      // Phrase 4 – Auflösung auf dem Grundton
-      659, 587, 523, 587, 659, 523, 0,   0,
+      // Takt 1 (Am) – der Hook
+      880,  0,   784, 880,  0,   659,  0,   587,
+      // Takt 2 (G) – Antwort tiefer
+      659,  0,   587, 659,  0,   523,  0,   440,
+      // Takt 3 (F) – Steigerung nach oben
+      880, 988, 1047,  0,  988,  880, 784,   0,
+      // Takt 4 (E) – Abstieg zurück zum Start
+      659, 784,  880,  0,  784,  659, 587,   0,
     ];
-    return this._playLoop(notes, 0.16, "triangle");
+
+    const melodyLoop = this._playLoop(notes, STEP, "square");
+
+    return {
+      stop() {
+        running = false;
+        clearInterval(schedulerId);
+        melodyLoop.stop();
+        for (const n of activeNodes) {
+          try {
+            n.stop();
+          } catch {
+            /* bereits gestoppt */
+          }
+        }
+      },
+    };
+  }
+
+  // Richtige Antwort: aufsteigender Dreiklang
+  playCorrect() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [659, 880, 1319].forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const env = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0, t + i * 0.09);
+      env.gain.linearRampToValueAtTime(0.3, t + i * 0.09 + 0.02);
+      env.gain.exponentialRampToValueAtTime(0.01, t + i * 0.09 + 0.28);
+      osc.connect(env);
+      env.connect(this.sfxGain);
+      osc.start(t + i * 0.09);
+      osc.stop(t + i * 0.09 + 0.28);
+    });
+  }
+
+  // Falsche Antwort: kurzes, freundliches "Uh-oh" (kein harter Fehlerton)
+  playWrong() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [392, 330].forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const env = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0, t + i * 0.14);
+      env.gain.linearRampToValueAtTime(0.22, t + i * 0.14 + 0.02);
+      env.gain.exponentialRampToValueAtTime(0.01, t + i * 0.14 + 0.22);
+      osc.connect(env);
+      env.connect(this.sfxGain);
+      osc.start(t + i * 0.14);
+      osc.stop(t + i * 0.14 + 0.22);
+    });
   }
 
   // Münze im Zahlenland: aufsteigendes Zwitschern (Zahl wird größer)

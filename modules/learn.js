@@ -136,20 +136,42 @@ const FACTS = {
     title: "Halfpipe & Energieumwandlung",
     text: "In der Halfpipe wandelst du ständig Energie um: Unten hast du maximale Bewegungsenergie, oben an der Lippe maximale Höhenenergie. Das ist Energieerhaltung in Reinform!",
   },
-  num_ice_stairs: {
-    icon: "🧊",
-    title: "Eisstufen & Reibung",
-    text: "Auf den Eisstufen rutschst du weiter, als du willst – dort ist die Reibung fast null. Auf Sand bremst du dagegen sofort ab. Plane deinen Absprung schon eine Stufe vorher!",
+  // ── Zahlenland: Rechenaufgaben zum Antippen ──────────────
+  math_plus: {
+    icon: "➕",
+    title: "Plus rechnen",
+    text: "Plus heißt dazuzählen. Jede Münze macht deine Zahl um eins größer.",
+    question: {
+      text: "Du bist eine 2 und sammelst 3 Münzen ein. Welche Zahl bist du dann?",
+      options: ["4", "5", "6"],
+      correct: 1,
+      praise: "Genau! 2 + 3 = 5. Du zählst einfach jede Münze dazu.",
+      hint: "Fast! Es sind 5: Zähl von der 2 aus drei weiter – 3, 4, 5.",
+    },
   },
-  num_freefall: {
-    icon: "❄️",
-    title: "Freier Fall",
-    text: "Die Eiszapfen werden beim Fallen immer schneller – jede Sekunde kommen rund 10 m/s dazu! Und das Verrückte: Ein schwerer und ein leichter Zapfen fallen genau gleich schnell.",
+  math_minus: {
+    icon: "➖",
+    title: "Minus rechnen",
+    text: "Minus heißt wegnehmen. Jeder Treffer macht deine Zahl um eins kleiner.",
+    question: {
+      text: "Du bist eine 7. Zwei Minus-Monster erwischen dich. Welche Zahl bist du jetzt?",
+      options: ["4", "5", "9"],
+      correct: 1,
+      praise: "Richtig! 7 − 2 = 5. Zwei Treffer nehmen dir zwei weg.",
+      hint: "Knapp daneben: 7 − 2 = 5. Zähl von der 7 zwei zurück – 6, 5.",
+    },
   },
-  num_energy_count: {
-    icon: "🔢",
-    title: "Sammeln & Zählen",
-    text: "Jede Münze macht dich um eins größer: 1, 2, 3 … Genau so addieren Physiker Energie – jeder Beitrag wird dazugezählt. Bei 10 bist du am stärksten und unbesiegbar!",
+  math_ten: {
+    icon: "🔟",
+    title: "Der Weg zur 10",
+    text: "Zwei Zahlen, die zusammen 10 ergeben, nennt man Partnerzahlen: 1 und 9, 2 und 8, 3 und 7 …",
+    question: {
+      text: "Du bist eine 4. Wie viele Münzen fehlen dir noch bis zur 10?",
+      options: ["5", "6", "7"],
+      correct: 1,
+      praise: "Super! 4 + 6 = 10 – damit wirst du unbesiegbar!",
+      hint: "Nicht ganz: 4 + 6 = 10. Es fehlen also 6 Münzen.",
+    },
   },
   skate_momentum: {
     icon: "💨",
@@ -167,9 +189,12 @@ export class LearnSystem {
     this.cardText = this.cardElement.querySelector(".card-text");
     this.cardBtn = this.cardElement.querySelector(".card-btn");
     this.cardPlay = this.cardElement.querySelector(".card-play");
+    this.cardAnswers = this.cardElement.querySelector(".card-answers");
     this.isShowing = false;
     this.onDismiss = null;
+    this.onAnswer = null; // Rückmeldung an game.js für Bonuspunkte
     this.currentUtterance = null;
+    this._answered = false;
 
     this.cardBtn.addEventListener("click", () => this.hideCard());
     this.cardPlay.addEventListener("click", () => this.toggleSpeech());
@@ -181,7 +206,9 @@ export class LearnSystem {
     const fact = FACTS[factId];
     if (!fact) return false;
 
-    this.shownFacts.add(factId);
+    // Rechenaufgaben werden bei jedem Durchgang neu gestellt,
+    // reine Info-Karten nur einmal
+    if (!fact.question) this.shownFacts.add(factId);
     this.showCard(fact, callback);
     return true;
   }
@@ -189,12 +216,57 @@ export class LearnSystem {
   showCard(fact, callback) {
     this.isShowing = true;
     this.onDismiss = callback || null;
+    this._answered = false;
     this.cardIcon.textContent = fact.icon;
     this.cardTitle.textContent = fact.title;
-    this.cardText.textContent = fact.text;
+    this.cardText.textContent = fact.question ? fact.question.text : fact.text;
     this.cardPlay.textContent = "\u25B6 Vorlesen";
     this.cardPlay.classList.remove("speaking");
+    this._renderAnswers(fact);
     this.cardElement.classList.remove("hidden");
+  }
+
+  // Antwortkn\u00F6pfe aufbauen (nur bei Karten mit Rechenaufgabe)
+  _renderAnswers(fact) {
+    this.cardAnswers.textContent = "";
+
+    if (!fact.question) {
+      this.cardAnswers.classList.add("hidden");
+      this.cardBtn.classList.remove("hidden");
+      return;
+    }
+
+    this.cardAnswers.classList.remove("hidden");
+    // "Weiter" erscheint erst nach der Antwort
+    this.cardBtn.classList.add("hidden");
+
+    fact.question.options.forEach((option, i) => {
+      const btn = document.createElement("button");
+      btn.className = "card-answer";
+      btn.textContent = option;
+      btn.addEventListener("click", () => this._checkAnswer(fact, i, btn));
+      this.cardAnswers.appendChild(btn);
+    });
+  }
+
+  _checkAnswer(fact, index, btn) {
+    if (this._answered) return;
+    this._answered = true;
+
+    const correct = index === fact.question.correct;
+    btn.classList.add(correct ? "correct" : "wrong");
+    // Bei falscher Antwort die richtige L\u00F6sung mit anzeigen
+    if (!correct) {
+      this.cardAnswers.children[fact.question.correct].classList.add("correct");
+    }
+
+    this.stopSpeech();
+    this.cardText.textContent = correct
+      ? fact.question.praise
+      : fact.question.hint;
+    this.cardBtn.classList.remove("hidden");
+
+    if (this.onAnswer) this.onAnswer(correct, fact);
   }
 
   hideCard() {

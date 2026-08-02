@@ -556,9 +556,9 @@ export const LEVELS = [
       { x: 1870, y: -120, floorY: 0,   cycle: 190, phase: 30  },
     ],
     learnTriggers: [
-      { x: 360,  y: 285, w: 40, h: 40, factId: "num_ice_stairs",   triggered: false },
-      { x: 940,  y: 150, w: 40, h: 40, factId: "num_freefall",     triggered: false },
-      { x: 1690, y: 20,  w: 40, h: 40, factId: "num_energy_count", triggered: false },
+      { x: 360,  y: 285, w: 40, h: 40, factId: "math_plus",  triggered: false },
+      { x: 940,  y: 150, w: 40, h: 40, factId: "math_minus", triggered: false },
+      { x: 1690, y: 20,  w: 40, h: 40, factId: "math_ten",   triggered: false },
     ],
     goal: { x: 2020, y: -100, w: 70, h: 36 },
     worldWidth: 2250,
