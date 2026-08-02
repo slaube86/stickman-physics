@@ -263,10 +263,165 @@ export class UI {
         ctx.fill();
       }
       ctx.restore();
+    } else if (theme === "numbers") {
+      // Eis oben, Sand unten
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME_H);
+      skyGrad.addColorStop(0,    "#0a1c2e");
+      skyGrad.addColorStop(0.5,  "#123a4e");
+      skyGrad.addColorStop(0.82, "#3d3524");
+      skyGrad.addColorStop(1,    "#5a4526");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Schwebende Ziffern & Rechenzeichen im Hintergrund
+      if (!level._numberField) {
+        const glyphs = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "−", "=", "×"];
+        level._numberField = Array.from({ length: 26 }, (_, i) => ({
+          x: Math.random() * GAME_W * 3,
+          y: 30 + Math.random() * (GAME_H - 60),
+          size: 16 + Math.random() * 34,
+          glyph: glyphs[i % glyphs.length],
+          drift: Math.random() * Math.PI * 2,
+        }));
+      }
+
+      const parallax = camera * 0.22;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const now = Date.now();
+      for (const n of level._numberField) {
+        const sx = n.x - parallax;
+        if (sx < -40 || sx > GAME_W + 40) continue;
+        ctx.globalAlpha = 0.10;
+        ctx.fillStyle = "#cfe8ff";
+        ctx.font = `bold ${n.size}px sans-serif`;
+        ctx.fillText(n.glyph, sx, n.y + Math.sin(now / 1400 + n.drift) * 6);
+      }
+      ctx.restore();
+
+      // Eiskristalle am oberen Rand
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = "#bfe6ff";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 9; i++) {
+        const sx = ((i * 137 - camera * 0.35) % (GAME_W + 120)) + -60;
+        ctx.beginPath();
+        ctx.moveTo(sx, 0);
+        ctx.lineTo(sx - 7, 22);
+        ctx.lineTo(sx + 7, 22);
+        ctx.closePath();
+        ctx.stroke();
+      }
+      ctx.restore();
     } else {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, GAME_W, GAME_H);
     }
+  }
+
+  // Fallende Eiszapfen zeichnen (Zustände: hang / fall / broken)
+  drawSpikes(ctx, spikes, camera) {
+    for (const s of spikes) {
+      const x = s.x - camera;
+      if (x < -40 || x > GAME_W + 40) continue;
+
+      ctx.save();
+      ctx.strokeStyle = "#fff";
+      ctx.fillStyle = "#fff";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // Zerbrochen: Splitter, die auseinanderfliegen
+      if (s.state === "broken") {
+        const t = 1 - s.timer / 30;
+        ctx.globalAlpha = Math.max(0, 1 - t);
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 5; i++) {
+          const a = -Math.PI + (i / 4) * Math.PI;
+          const d = 4 + t * 22;
+          ctx.beginPath();
+          ctx.moveTo(x, s.floorY - 2);
+          ctx.lineTo(x + Math.cos(a) * d, s.floorY - 2 + Math.sin(a) * d * 0.6);
+          ctx.stroke();
+        }
+        ctx.restore();
+        continue;
+      }
+
+      // Aufhängung an der "Decke"
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x - 10, s.y0 - 2);
+      ctx.lineTo(x + 10, s.y0 - 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Warnblinken kurz vor dem Absturz
+      let wobble = 0;
+      if (s.state === "hang") {
+        if (s.timer < 30) {
+          if (Math.floor(s.timer / 4) % 2 === 0) {
+            ctx.restore();
+            continue;
+          }
+          wobble = Math.sin(Date.now() / 40) * 1.5;
+        } else {
+          wobble = Math.sin(Date.now() / 500 + s.x) * 0.8;
+        }
+      }
+
+      // Zapfen: schmales Dreieck mit der Spitze nach unten
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 6 + wobble, s.y);
+      ctx.lineTo(x + 6 + wobble, s.y);
+      ctx.lineTo(x + wobble, s.y + s.h);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Glanzlinie im Zapfen
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x - 2 + wobble, s.y + 3);
+      ctx.lineTo(x + wobble, s.y + s.h - 4);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  // Zahlen-Anzeige oben mittig (nur im Zahlenland)
+  drawNumberHUD(ctx, value, invincible) {
+    const cx = GAME_W / 2;
+    ctx.save();
+    ctx.textAlign = "center";
+
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = "#fff";
+    ctx.font = "10px sans-serif";
+    ctx.textBaseline = "top";
+    ctx.fillText("DU BIST", cx, 8);
+    ctx.globalAlpha = 1;
+
+    const pulse = invincible ? Math.sin(Date.now() / 160) * 2 : 0;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.font = `bold ${26 + pulse}px sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.strokeText(String(value), cx, 36);
+
+    if (invincible) {
+      ctx.globalAlpha = 0.7;
+      ctx.font = "bold 9px sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#fff";
+      ctx.fillText("UNBESIEGBAR", cx, 52);
+    }
+    ctx.restore();
   }
 
   // Plattformen zeichnen – nur dünne weiße Linien
@@ -441,6 +596,11 @@ export class UI {
 
     if (theme === "desert") {
       this._drawPersianGate(ctx, x, goal);
+      return;
+    }
+
+    if (theme === "numbers") {
+      this._drawEqualsGoal(ctx, x, goal);
       return;
     }
 
@@ -786,6 +946,124 @@ export class UI {
     ctx.restore();
   }
 
+  // Großes Gleichheitszeichen als Ziel (Zahlenland)
+  _drawEqualsGoal(ctx, x, goal) {
+    const cx = x + goal.w / 2;
+    const cy = goal.y + goal.h / 2;
+    const now = Date.now();
+    const pulse = Math.sin(now / 380) * 2;
+    const barW = 46 + pulse;
+
+    ctx.save();
+    ctx.strokeStyle = "#fff";
+    ctx.fillStyle = "#fff";
+    ctx.lineCap = "round";
+
+    // Strahlenkranz hinter dem Zeichen
+    ctx.globalAlpha = 0.15;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+      const a = now / 2200 + (i / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * 34, cy + Math.sin(a) * 34);
+      ctx.lineTo(cx + Math.cos(a) * (44 + pulse), cy + Math.sin(a) * (44 + pulse));
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Die beiden Balken des "="
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(cx - barW / 2, cy - 9);
+    ctx.lineTo(cx + barW / 2, cy - 9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - barW / 2, cy + 9);
+    ctx.lineTo(cx + barW / 2, cy + 9);
+    ctx.stroke();
+
+    // "ZIEL" blinkend darüber
+    const blink = Math.sin(now / 400) * 0.3 + 0.7;
+    ctx.globalAlpha = blink;
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("ZIEL", cx, cy - 34);
+    ctx.globalAlpha = 0.5;
+    ctx.font = "9px sans-serif";
+    ctx.fillText("wie viel bist du?", cx, cy + 40);
+
+    ctx.restore();
+  }
+
+  // Minus-Monster (Zahlenland): frisst eine Stelle deiner Zahl
+  _drawMinusMonster(ctx, e) {
+    const knocked = e.state === "knocked";
+    const bob = knocked ? 0 : Math.sin(Date.now() / 220 + e.x * 0.05) * 1.5;
+
+    ctx.lineWidth = 2;
+
+    // Körper (runder Klumpen)
+    ctx.beginPath();
+    ctx.ellipse(0, -16 + bob, 11, 13, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Zackenkamm oben
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-8, -25 + bob);
+    ctx.lineTo(-5, -32 + bob);
+    ctx.lineTo(-2, -26 + bob);
+    ctx.lineTo(2, -33 + bob);
+    ctx.lineTo(5, -26 + bob);
+    ctx.lineTo(8, -31 + bob);
+    ctx.stroke();
+
+    // Böse Augen
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-7, -23 + bob);
+    ctx.lineTo(-3, -21 + bob);
+    ctx.moveTo(3, -21 + bob);
+    ctx.lineTo(7, -23 + bob);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-4.5, -19 + bob, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(4.5, -19 + bob, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Das Minuszeichen als Mund – das ist die Bedrohung
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-6, -12 + bob);
+    ctx.lineTo(6, -12 + bob);
+    ctx.stroke();
+
+    // Ärmchen
+    ctx.lineWidth = 1.5;
+    const wave = knocked ? 6 : Math.sin(Date.now() / 200 + e.x * 0.09) * 3;
+    ctx.beginPath();
+    ctx.moveTo(-11, -16 + bob);
+    ctx.lineTo(-17, -12 + bob + wave);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(11, -16 + bob);
+    ctx.lineTo(17, -12 + bob - wave);
+    ctx.stroke();
+
+    // Beinchen
+    const step = knocked ? 5 : Math.sin(Date.now() / 180 + e.x * 0.07) * 3;
+    ctx.beginPath();
+    ctx.moveTo(-4, -3 + bob);
+    ctx.lineTo(-5 + step, 0);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(4, -3 + bob);
+    ctx.lineTo(5 - step, 0);
+    ctx.stroke();
+  }
+
   // Gegner zeichnen – je nach Theme unterschiedliche Figuren
   drawEnemies(ctx, enemies, camera, theme) {
     for (const e of enemies) {
@@ -815,6 +1093,12 @@ export class UI {
 
       if (theme === "desert") {
         this._drawScorpion(ctx, e);
+        ctx.restore();
+        continue;
+      }
+
+      if (theme === "numbers") {
+        this._drawMinusMonster(ctx, e);
         ctx.restore();
         continue;
       }

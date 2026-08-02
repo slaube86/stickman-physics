@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=24";
+import { Stickman } from "./modules/stickman.js?v=25";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=24";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=24";
-import { LearnSystem } from "./modules/learn.js?v=24";
-import { UI, setupTouchControls } from "./modules/ui.js?v=24";
-import { AudioManager } from "./modules/audio.js?v=24";
+} from "./modules/physics.js?v=25";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=25";
+import { LearnSystem } from "./modules/learn.js?v=25";
+import { UI, setupTouchControls } from "./modules/ui.js?v=25";
+import { AudioManager } from "./modules/audio.js?v=25";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -51,6 +51,14 @@ let gameState = "menu"; // menu, playing, levelSelect, levelComplete, gameOver
 let lastTime = 0;
 let levelCompleteTimer = 0;
 let enemies = []; // aktive Gegner im aktuellen Level
+let spikes = []; // fallende Eiszapfen (Zahlenland)
+
+// ─── Zahlen-Modus (Level 11) ───────────────────────────────
+let playerNumber = 1; // Der Spieler IST diese Zahl
+let invincible = false; // ab Zahl 10
+let hitTimer = 0; // Unverwundbarkeit nach einem Treffer (Frames)
+let specialAnimTimer = 0; // Spezial-Animation bei voller Punktzahl
+let floatTexts = []; // schwebende "+15" / "−1" Texte
 
 // ─── Systeme ───────────────────────────────────────────────
 const ui = new UI(canvas);
@@ -117,7 +125,27 @@ function startLevel(id) {
     state: "patrol", // patrol | knocked | dead
     facing: 1,
     knockTimer: 0,
+    jumpedOver: false,
   }));
+  // Fallende Eiszapfen instanziieren
+  spikes = (level.spikes || []).map((s) => ({
+    x: s.x,
+    y0: s.y,
+    y: s.y,
+    w: 12,
+    h: 20,
+    vy: 0,
+    floorY: s.floorY,
+    cycle: s.cycle || 180,
+    state: "hang", // hang | fall | broken
+    timer: (s.phase || 0) + 60, // Schonfrist beim Levelstart
+  }));
+  // Zahlen-Modus zurücksetzen
+  playerNumber = 1;
+  invincible = false;
+  hitTimer = 0;
+  specialAnimTimer = 0;
+  floatTexts = [];
   audio.startMusic(level.theme);
 }
 
@@ -195,6 +223,7 @@ const MAP_NODES = [
   { id: 8, x: 712, y: 110, theme: "clockwork", name: "Clockwork"  },
   { id: 9, x: 752, y: 312, theme: "desert",    name: "Wüste"      },
   { id: 10, x: 690, y: 355, theme: "skatepark", name: "Skatepark"  },
+  { id: 11, x: 560, y: 352, theme: "numbers",   name: "Zahlenland" },
 ];
 
 const NODE_RGB = {
@@ -207,6 +236,7 @@ const NODE_RGB = {
   clockwork: [185, 132,  58],
   desert:    [215, 142,  38],
   skatepark: [180,  60, 220],
+  numbers:   [110, 210, 200],
 };
 
 function drawLevelSelect() {
@@ -402,6 +432,101 @@ muteBtn.addEventListener("click", () => {
   muteBtn.textContent = muted ? "🔇" : "🔊";
 });
 
+// ─── Zahlen-Modus: Hilfsfunktionen ─────────────────────────
+function addFloatText(x, y, text) {
+  floatTexts.push({ x, y, text, life: 60 });
+}
+
+function updateFloatTexts() {
+  for (let i = floatTexts.length - 1; i >= 0; i--) {
+    const f = floatTexts[i];
+    f.y -= 0.7;
+    f.life--;
+    if (f.life <= 0) floatTexts.splice(i, 1);
+  }
+}
+
+// Roundhouse-Kick auf einen Gegner
+function kickEnemy(e) {
+  player.kickTimer = 22;
+  const dir = e.x + e.w / 2 > player.x + player.w / 2 ? 1 : -1;
+  player.facing = dir;
+  e.state = "knocked";
+  e.knockTimer = 50;
+  e.vx = dir * 9;
+  e.vy = -7;
+  score += 20;
+  audio.playBounce();
+}
+
+// Treffer: Die Zahl schrumpft (aus einer 3 wird wieder eine 2)
+function damagePlayer(knockDir) {
+  if (hitTimer > 0 || invincible || gameState !== "playing") return;
+
+  playerNumber--;
+  hitTimer = 90;
+  player.vx = knockDir * 5;
+  player.vy = -5;
+  player.onGround = false;
+  audio.playNumberDown();
+  addFloatText(player.x + player.w / 2, player.y - 6, "−1");
+
+  if (playerNumber < 1) {
+    playerNumber = 0;
+    gameState = "gameOver";
+    audio.stopMusic();
+    audio.playGameOver();
+  }
+}
+
+// ─── Fallende Eiszapfen ────────────────────────────────────
+function updateSpikes() {
+  for (const s of spikes) {
+    if (s.state === "hang") {
+      s.timer--;
+      if (s.timer <= 0) {
+        s.state = "fall";
+        s.vy = 0;
+      }
+    } else if (s.state === "fall") {
+      s.vy += 0.45;
+      s.y += s.vy;
+      if (s.y + s.h >= s.floorY) {
+        s.y = s.floorY - s.h;
+        s.state = "broken";
+        s.timer = 30;
+      }
+    } else if (s.state === "broken") {
+      s.timer--;
+      if (s.timer <= 0) {
+        s.state = "hang";
+        s.y = s.y0;
+        s.vy = 0;
+        s.timer = s.cycle;
+      }
+    }
+
+    // Treffer nur während des Falls
+    if (s.state !== "fall") continue;
+    const pb = player.getBounds();
+    if (
+      pb.x < s.x + s.w / 2 &&
+      pb.x + pb.w > s.x - s.w / 2 &&
+      pb.y < s.y + s.h &&
+      pb.y + pb.h > s.y
+    ) {
+      if (invincible) {
+        audio.playBounce();
+      } else {
+        damagePlayer(player.x + player.w / 2 < s.x ? -1 : 1);
+      }
+      s.state = "broken";
+      s.timer = 30;
+      s.y = s.floorY - s.h;
+    }
+  }
+}
+
 // ─── Gegner-KI & Kick-Erkennung ────────────────────────────
 function updateEnemies() {
   for (let i = enemies.length - 1; i >= 0; i--) {
@@ -433,27 +558,32 @@ function updateEnemies() {
       e.facing = -1;
     }
 
-    // Kollision mit Spieler → automatischer Roundhouse-Kick!
-    if (player.kickTimer <= 0) {
-      const pb = player.getBounds();
-      if (
-        pb.x < e.x + e.w &&
-        pb.x + pb.w > e.x &&
-        pb.y < e.y + e.h &&
-        pb.y + pb.h > e.y
-      ) {
-        // Kick-Animation starten
-        player.kickTimer = 22;
-        const dir = e.x + e.w / 2 > player.x + player.w / 2 ? 1 : -1;
-        player.facing = dir;
-        // Gegner wegschleudern
-        e.state = "knocked";
-        e.knockTimer = 50;
-        e.vx = dir * 9;
-        e.vy = -7;
-        score += 20;
-        audio.playBounce();
+    const pb = player.getBounds();
+    const overlapX = pb.x < e.x + e.w && pb.x + pb.w > e.x;
+    const touches =
+      overlapX && pb.y < e.y + e.h && pb.y + pb.h > e.y;
+
+    // ── Schadens-Modus (Zahlenland): Gegner müssen übersprungen werden
+    if (level.enemyMode === "damage") {
+      // Bonus fürs saubere Überspringen – einmal pro Gegner
+      if (overlapX && !e.jumpedOver && pb.y + pb.h <= e.y + 4) {
+        e.jumpedOver = true;
+        score += 15;
+        addFloatText(e.x + e.w / 2, e.y - 18, "+15");
       }
+      if (touches) {
+        if (invincible) {
+          if (player.kickTimer <= 0) kickEnemy(e);
+        } else {
+          damagePlayer(player.x + player.w / 2 < e.x + e.w / 2 ? -1 : 1);
+        }
+      }
+      continue;
+    }
+
+    // ── Standard: automatischer Roundhouse-Kick
+    if (player.kickTimer <= 0 && touches) {
+      kickEnemy(e);
     }
   }
 }
@@ -503,6 +633,12 @@ function update(dt) {
   // Gegner aktualisieren & Kick-Kollision prüfen
   updateEnemies();
 
+  // Zahlen-Modus: Eiszapfen, Timer & Schwebetexte
+  updateSpikes();
+  if (hitTimer > 0) hitTimer--;
+  if (specialAnimTimer > 0) specialAnimTimer--;
+  updateFloatTexts();
+
   // Kamera (Spieler zentrieren, mit Rand)
   const targetCam = player.x - GAME_W / 3;
   camera += (targetCam - camera) * 0.08;
@@ -530,7 +666,21 @@ function update(dt) {
       coin.collected = true;
       coin.collectTime = Date.now();
       score += 10;
-      audio.playCoin();
+
+      // Zahlen-Modus: Die Münze lässt die Zahl wachsen
+      if (level.numberMode && playerNumber < 10) {
+        playerNumber++;
+        addFloatText(coin.x, coin.y - 8, `= ${playerNumber}`);
+        audio.playNumberUp(playerNumber);
+        // Volle Punktzahl → Spezial-Animation + Unbesiegbarkeit
+        if (playerNumber >= 10) {
+          invincible = true;
+          specialAnimTimer = 150;
+          audio.playPowerUp();
+        }
+      } else {
+        audio.playCoin();
+      }
     }
   }
 
@@ -563,6 +713,11 @@ function update(dt) {
   ) {
     gameState = "levelComplete";
     score += 100;
+    // Zahlen-Modus: Je höher die Zahl, desto mehr Punkte
+    if (level.numberMode) {
+      score += playerNumber * 50;
+      if (playerNumber >= 10) score += 500;
+    }
     levelCompleteTimer = 0;
     audio.stopMusic();
     audio.playLevelComplete();
@@ -619,6 +774,7 @@ function render() {
   ui.drawCoins(ctx, level.coins, camera);
   ui.drawLearnTriggers(ctx, level.learnTriggers, camera);
   ui.drawGoal(ctx, level.goal, camera, level.theme);
+  ui.drawSpikes(ctx, spikes, camera);
   ui.drawEnemies(ctx, enemies, camera, level.theme);
 
   // Stickman zeichnen (relativ zur Kamera)
@@ -636,14 +792,25 @@ function render() {
     player.drawEngineer(ctx);
   } else if (level.theme === "skatepark") {
     player.drawSkater(ctx);
+  } else if (level.theme === "numbers") {
+    player.drawNumber(ctx, playerNumber, invincible, hitTimer);
   } else {
     player.draw(ctx);
   }
   ctx.restore();
 
+  // Schwebende Punkte-Texte
+  drawFloatTexts();
+
+  // Spezial-Animation bei voller Punktzahl
+  if (specialAnimTimer > 0) drawSpecialAnim();
+
+  ctx.restore(); // cameraY-Verschiebung beenden
+
   // HUD
   ui.updateHUD(score, `Level ${level.id}: ${level.name}`);
   ui.drawPhysicsInfo(ctx, player);
+  if (level.numberMode) ui.drawNumberHUD(ctx, playerNumber, invincible);
 
   // Level Complete Overlay
   if (gameState === "levelComplete") {
@@ -654,6 +821,67 @@ function render() {
     ctx.scale(sx, sy);
     drawLevelComplete();
   }
+}
+
+// Schwebende "+15" / "−1" / "= 4" Texte (Weltkoordinaten)
+function drawFloatTexts() {
+  if (floatTexts.length === 0) return;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = "bold 13px sans-serif";
+  ctx.fillStyle = "#fff";
+  for (const f of floatTexts) {
+    ctx.globalAlpha = Math.min(1, f.life / 30);
+    ctx.fillText(f.text, f.x - camera, f.y);
+  }
+  ctx.restore();
+}
+
+// Spezial-Animation: Ringe, Funken und "UNBESIEGBAR!"
+function drawSpecialAnim() {
+  const t = 1 - specialAnimTimer / 150;
+  const cx = player.x + player.w / 2 - camera;
+  const cy = player.y + player.h / 2;
+
+  ctx.save();
+  ctx.strokeStyle = "#fff";
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+
+  // Expandierende Ringe
+  for (let i = 0; i < 3; i++) {
+    const rt = (t + i * 0.33) % 1;
+    ctx.globalAlpha = Math.max(0, 1 - rt) * 0.9;
+    ctx.lineWidth = Math.max(0.5, 3 - rt * 2);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10 + rt * 90, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Funken
+  ctx.globalAlpha = Math.max(0, 1 - t);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + t * 2;
+    const d = 20 + t * 70;
+    ctx.beginPath();
+    ctx.arc(
+      cx + Math.cos(a) * d,
+      cy + Math.sin(a) * d,
+      Math.max(0.5, 2.5 - t * 2),
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+
+  // Text
+  ctx.globalAlpha = Math.min(1, (1 - t) * 2);
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("UNBESIEGBAR!", cx, cy - 70);
+  ctx.font = "bold 11px sans-serif";
+  ctx.fillText("volle Punktzahl: 10", cx, cy - 54);
+
+  ctx.restore();
 }
 
 function drawMenu() {
@@ -752,6 +980,24 @@ function drawLevelComplete() {
     GAME_W / 2,
     240 + overlayY,
   );
+
+  // Zahlen-Modus: Zahl-Bonus anzeigen
+  if (level && level.numberMode) {
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText(
+      `Deine Zahl: ${playerNumber}  →  +${playerNumber * 50} Bonus`,
+      GAME_W / 2,
+      266 + overlayY,
+    );
+    if (playerNumber >= 10) {
+      const blink = Math.sin(Date.now() / 200) * 0.35 + 0.65;
+      ctx.globalAlpha = blink;
+      ctx.font = "bold 18px sans-serif";
+      ctx.fillText("PERFEKT! 10 / 10  ·  +500", GAME_W / 2, 286 + overlayY);
+      ctx.globalAlpha = 1;
+    }
+  }
 
   // Auto-Weiter nach ~3 Sekunden
   if (levelCompleteTimer > 180) {

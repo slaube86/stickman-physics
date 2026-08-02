@@ -1,5 +1,52 @@
 # Stickman Physics – Changelog
 
+## Level 11: Zahlenland (1. August 2026)
+
+### Neues Level
+- **Theme:** `numbers`
+- **Story:** Der Spieler *ist* eine Zahl – Start bei `1`, jede Münze macht daraus `2`, `3`, `4` … bis `10`
+- **Level-Design:** Sandboden → Eistreppe nach oben → Sand-Plateau → zweite Treppe → Hoch-Plateau mit Trampolin → Aufstieg zum Gleichheitszeichen (vertikales Scrolling bis y = −420)
+
+### Neue Mechaniken
+- **Zahlen-Modus** (`numberMode`): Münze = `+1`, Gegnertreffer = `−1`, unter `1` → Game Over
+- **Schadens-Gegner** (`enemyMode: "damage"`): Minus-Monster müssen übersprungen werden (`+15` Bonus), statt automatisch gekickt zu werden
+- **Fallende Eiszapfen** (`spikes`): Zustandsautomat `hang → fall → broken`, mit Warnblinken vor dem Absturz
+- **Unbesiegbarkeit ab Zahl 10:** Spezial-Animation (Ringe, Funken, Fanfare), Aura um die Ziffer, Gegner fliegen bei Berührung weg, Eiszapfen zerschellen
+- **Ziel-Bonus:** `Zahl × 50`, bei `10` zusätzlich `+500`
+
+### Neue Charaktere
+- **Zahlen-Stickman** (`drawNumber()`): Die aktuelle Ziffer ist der Rumpf, dazu Kopf, Arme, Beine, Blinken nach Treffern und Funken-Aura
+- **Minus-Monster** (`_drawMinusMonster()`): Zackiger Klumpen mit Minuszeichen als Mund
+- **Gleichheitszeichen** (`_drawEqualsGoal()`): Zwei pulsierende Balken mit Strahlenkranz
+
+### Neue Lernfakten
+| Fakt-ID | Titel | Icon |
+|---------|-------|------|
+| `num_ice_stairs` | Eisstufen & Reibung | 🧊 |
+| `num_freefall` | Freier Fall | ❄️ |
+| `num_energy_count` | Sammeln & Zählen | 🔢 |
+
+### Neue Musik & Sounds
+| Name | Waveform | Stil |
+|------|----------|------|
+| `numbers` | Triangle | Hüpfender Abzählreim in C-Dur-Pentatonik (0.16 s/Note) |
+| `playNumberUp()` | Triangle | Aufsteigendes Zwitschern, klingt mit jeder Stufe höher |
+| `playNumberDown()` | Square | Absteigender Ton beim Treffer |
+| `playPowerUp()` | Square + Sine | Fanfare mit Funkeln bei voller Punktzahl |
+
+### Nebenbei behoben
+- `render()` hatte ein `ctx.save()` ohne passendes `restore()` – der Canvas-State-Stack wuchs mit jedem Frame. Dadurch stand die Geschwindigkeitsanzeige in Levels mit vertikalem Scrolling auch an der falschen Stelle.
+
+### Geänderte Dateien
+- `modules/level.js` – Level 11 Daten inkl. `spikes`, `numberMode`, `enemyMode`
+- `modules/stickman.js` – `drawNumber()`
+- `modules/ui.js` – `numbers`-Hintergrund, `drawSpikes()`, `drawNumberHUD()`, `_drawEqualsGoal()`, `_drawMinusMonster()`
+- `modules/learn.js` – 3 neue Fakten
+- `modules/audio.js` – `_melodyNumbers()`, `playNumberUp/Down()`, `playPowerUp()`
+- `game.js` – Zahlen-State, Eiszapfen-Update, Schadens-Modus, Spezial-Animation, Weltkarten-Knoten 11
+
+---
+
 ## Level 5: Minecraft Welt (11. April 2026)
 
 ### Neues Level

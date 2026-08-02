@@ -136,6 +136,21 @@ const FACTS = {
     title: "Halfpipe & Energieumwandlung",
     text: "In der Halfpipe wandelst du ständig Energie um: Unten hast du maximale Bewegungsenergie, oben an der Lippe maximale Höhenenergie. Das ist Energieerhaltung in Reinform!",
   },
+  num_ice_stairs: {
+    icon: "🧊",
+    title: "Eisstufen & Reibung",
+    text: "Auf den Eisstufen rutschst du weiter, als du willst – dort ist die Reibung fast null. Auf Sand bremst du dagegen sofort ab. Plane deinen Absprung schon eine Stufe vorher!",
+  },
+  num_freefall: {
+    icon: "❄️",
+    title: "Freier Fall",
+    text: "Die Eiszapfen werden beim Fallen immer schneller – jede Sekunde kommen rund 10 m/s dazu! Und das Verrückte: Ein schwerer und ein leichter Zapfen fallen genau gleich schnell.",
+  },
+  num_energy_count: {
+    icon: "🔢",
+    title: "Sammeln & Zählen",
+    text: "Jede Münze macht dich um eins größer: 1, 2, 3 … Genau so addieren Physiker Energie – jeder Beitrag wird dazugezählt. Bei 10 bist du am stärksten und unbesiegbar!",
+  },
   skate_momentum: {
     icon: "💨",
     title: "Schwung & Impuls",

@@ -501,6 +501,79 @@ export const LEVELS = [
     worldWidth: 2050,
   },
 
+  // Level 11 – Zahlenland (Eis & Sand)
+  {
+    id: 11,
+    name: "Zahlenland",
+    theme: "numbers",
+    spawnX: 50,
+    spawnY: 300,
+    numberMode: true,       // Spieler ist eine Ziffer, Münzen lassen sie wachsen
+    enemyMode: "damage",    // Gegner ziehen ab statt automatisch gekickt zu werden
+    platforms: [
+      // ─── Sektion 1: Sandboden (Start) ───────────────────────
+      { x: 0,    y: 370, w: 300, h: 30, surface: "sand" },
+      // ─── Sektion 2: Eistreppe nach oben ─────────────────────
+      { x: 345,  y: 325, w: 95,  h: 15, surface: "ice"  },
+      { x: 485,  y: 280, w: 95,  h: 15, surface: "ice"  },
+      { x: 625,  y: 235, w: 95,  h: 15, surface: "sand" },
+      { x: 765,  y: 190, w: 95,  h: 15, surface: "ice"  },
+      // ─── Sektion 3: Sand-Plateau (Gegner & Eiszapfen) ───────
+      { x: 860,  y: 190, w: 250, h: 20, surface: "sand" },
+      // ─── Sektion 4: Zweite Treppe ───────────────────────────
+      { x: 1155, y: 150, w: 100, h: 15, surface: "ice"  },
+      { x: 1300, y: 105, w: 100, h: 15, surface: "sand" },
+      { x: 1445, y: 60,  w: 100, h: 15, surface: "ice"  },
+      // ─── Sektion 5: Hoch-Plateau mit Trampolin ──────────────
+      { x: 1545, y: 60,  w: 220, h: 20, surface: "sand" },
+      { x: 1590, y: 55,  w: 55,  h: 10, surface: "trampolin" },
+      // ─── Sektion 6: Aufstieg zum Gleichheitszeichen ─────────
+      { x: 1810, y: 0,   w: 120, h: 15, surface: "ice"  },
+      { x: 1970, y: -60, w: 200, h: 20, surface: "sand" },
+    ],
+    coins: [
+      { x: 150,  y: 340 },
+      { x: 390,  y: 295 },
+      { x: 530,  y: 250 },
+      { x: 670,  y: 205 },
+      { x: 810,  y: 160 },
+      { x: 900,  y: 160 },
+      { x: 1060, y: 160 },
+      { x: 1200, y: 120 },
+      { x: 1345, y: 75  },
+      { x: 1490, y: 30  },
+      { x: 1660, y: 20  },
+      { x: 1860, y: -30 },
+    ],
+    // Fallende Eiszapfen: hängen bei y, stürzen bis floorY, danach Reset
+    spikes: [
+      { x: 930,  y: 60,   floorY: 190, cycle: 170, phase: 0   },
+      { x: 1040, y: 60,   floorY: 190, cycle: 170, phase: 85  },
+      { x: 1210, y: 20,   floorY: 150, cycle: 200, phase: 40  },
+      { x: 1350, y: -30,  floorY: 105, cycle: 200, phase: 120 },
+      { x: 1610, y: -60,  floorY: 60,  cycle: 180, phase: 60  },
+      { x: 1700, y: -60,  floorY: 60,  cycle: 180, phase: 150 },
+      { x: 1870, y: -120, floorY: 0,   cycle: 190, phase: 30  },
+    ],
+    learnTriggers: [
+      { x: 360,  y: 285, w: 40, h: 40, factId: "num_ice_stairs",   triggered: false },
+      { x: 940,  y: 150, w: 40, h: 40, factId: "num_freefall",     triggered: false },
+      { x: 1690, y: 20,  w: 40, h: 40, factId: "num_energy_count", triggered: false },
+    ],
+    goal: { x: 2020, y: -100, w: 70, h: 36 },
+    worldWidth: 2250,
+    worldTop: -420,
+    enemies: [
+      { x: 900,  platformY: 190, patrolLeft: 865,  patrolRight: 1105, speed: 1.4 },
+      // Rechte Hälfte der Stufe – links bleibt eine sichere Landezone
+      { x: 1350, platformY: 105, patrolLeft: 1340, patrolRight: 1397, speed: 1.1 },
+      { x: 1560, platformY: 60,  patrolLeft: 1550, patrolRight: 1650, speed: 1.5 },
+      { x: 1670, platformY: 60,  patrolLeft: 1660, patrolRight: 1762, speed: 1.2 },
+      // Letzte Plattform: Landezone links frei lassen
+      { x: 1870, platformY: 0,   patrolLeft: 1860, patrolRight: 1927, speed: 1.3 },
+    ],
+  },
+
   // Level 7 – Ninjago Tempel
   {
     id: 7,

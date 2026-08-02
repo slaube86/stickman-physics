@@ -612,6 +612,102 @@ export class Stickman {
     ctx.restore();
   }
 
+  // Zahlen-Skin für das Zahlenland: Der Rumpf ist die aktuelle Ziffer
+  // value = aktuelle Zahl, invincible = Aura bei voller Punktzahl,
+  // hitTimer > 0 lässt die Figur blinken
+  drawNumber(ctx, value, invincible = false, hitTimer = 0) {
+    // Blinken nach einem Treffer (jeder 2. 6er-Block unsichtbar)
+    if (hitTimer > 0 && Math.floor(hitTimer / 6) % 2 === 1) return;
+
+    ctx.save();
+    ctx.translate(this.x + this.w / 2, this.y + this.h);
+
+    const headRadius = 6;
+    const headCY = -40;
+    const digit = String(value);
+
+    // ── Aura bei Unbesiegbarkeit ─────────────────────────────
+    if (invincible) {
+      const now = Date.now();
+      const pulse = Math.sin(now / 180) * 3;
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -24, 26 + pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      // Umlaufende Funken
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = "#fff";
+      for (let i = 0; i < 5; i++) {
+        const a = now / 320 + (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(
+          Math.cos(a) * (28 + pulse),
+          -24 + Math.sin(a) * (28 + pulse),
+          1.8,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.fillStyle = "#ffffff";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // ── Ziffer als Rumpf (nicht gespiegelt, damit sie lesbar bleibt) ──
+    ctx.font = "bold 26px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.lineWidth = 2;
+    ctx.strokeText(digit, 0, -14);
+    const halfW = Math.max(7, ctx.measureText(digit).width / 2);
+
+    // ── Kopf ─────────────────────────────────────────────────
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, headCY, headRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Auge in Blickrichtung
+    ctx.beginPath();
+    ctx.arc(this.facing * 2.5, headCY - 1, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Arme seitlich an der Ziffer ──────────────────────────
+    const armSwing = this._getArmSwing();
+    const armY = -30;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-halfW, armY);
+    ctx.lineTo(-halfW - 8, armY + 8 + armSwing.left * 0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(halfW, armY);
+    ctx.lineTo(halfW + 8, armY + 8 + armSwing.right * 0.5);
+    ctx.stroke();
+
+    // ── Beine unter der Ziffer ───────────────────────────────
+    const legSwing = this._getLegSwing();
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-3, -13);
+    ctx.lineTo(-4 + legSwing.leftX * 0.6, -1 + legSwing.leftY * 0.4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(3, -13);
+    ctx.lineTo(4 + legSwing.rightX * 0.6, -1 + legSwing.rightY * 0.4);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
   // Ninja-Skin für das Ninjago-Level
   drawNinja(ctx) {
     ctx.save();

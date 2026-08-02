@@ -170,6 +170,7 @@ export class AudioManager {
       clockwork: this._melodyClockwork.bind(this),
       desert: this._melodyDesert.bind(this),
       skatepark: this._melodySkatepark.bind(this),
+      numbers: this._melodyNumbers.bind(this),
     };
 
     const melodyFn = melodies[theme] || melodies.normal;
@@ -465,6 +466,93 @@ export class AudioManager {
       587, 523, 440, 494, 523, 440, 392, 0,
     ];
     return this._playLoop(notes, 0.12, "square");
+  }
+
+  // --- Numbers Theme: hüpfender Abzählreim in C-Dur-Pentatonik ---
+  _melodyNumbers() {
+    const notes = [
+      // Zähl-Phrase 1 – Treppe aufwärts (1,2,3,4,5)
+      523, 587, 659, 784, 880, 0,   784, 0,
+      // Phrase 2 – Antwort abwärts
+      880, 784, 659, 587, 523, 0,   587, 0,
+      // Phrase 3 – höher zählen (6,7,8,9,10)
+      659, 784, 880, 1047, 880, 0,  784, 0,
+      // Phrase 4 – Auflösung auf dem Grundton
+      659, 587, 523, 587, 659, 523, 0,   0,
+    ];
+    return this._playLoop(notes, 0.16, "triangle");
+  }
+
+  // Münze im Zahlenland: aufsteigendes Zwitschern (Zahl wird größer)
+  playNumberUp(value = 1) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Mit steigender Zahl klingt es eine Stufe höher
+    const base = 523 + Math.min(value, 10) * 45;
+
+    const osc = this.ctx.createOscillator();
+    const env = this.ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(base, t);
+    osc.frequency.exponentialRampToValueAtTime(base * 1.5, t + 0.12);
+    env.gain.setValueAtTime(0.3, t);
+    env.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+    osc.connect(env);
+    env.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
+
+  // Treffer: absteigender Ton (Zahl schrumpft)
+  playNumberDown() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const env = this.ctx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.28);
+    env.gain.setValueAtTime(0.3, t);
+    env.gain.exponentialRampToValueAtTime(0.01, t + 0.32);
+    osc.connect(env);
+    env.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.32);
+  }
+
+  // Volle Punktzahl erreicht – Power-up-Fanfare
+  playPowerUp() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const notes = [523, 659, 784, 1047, 1319];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const env = this.ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0, t + i * 0.08);
+      env.gain.linearRampToValueAtTime(0.28, t + i * 0.08 + 0.02);
+      env.gain.exponentialRampToValueAtTime(0.01, t + i * 0.08 + 0.3);
+      osc.connect(env);
+      env.connect(this.sfxGain);
+      osc.start(t + i * 0.08);
+      osc.stop(t + i * 0.08 + 0.3);
+    });
+
+    // Funkeln obendrauf
+    const spark = this.ctx.createOscillator();
+    const sparkEnv = this.ctx.createGain();
+    spark.type = "sine";
+    spark.frequency.setValueAtTime(1800, t + 0.4);
+    spark.frequency.exponentialRampToValueAtTime(3200, t + 0.7);
+    sparkEnv.gain.setValueAtTime(0.12, t + 0.4);
+    sparkEnv.gain.exponentialRampToValueAtTime(0.01, t + 0.75);
+    spark.connect(sparkEnv);
+    sparkEnv.connect(this.sfxGain);
+    spark.start(t + 0.4);
+    spark.stop(t + 0.75);
   }
 
   _playLoop(notes, noteLen, waveType) {
