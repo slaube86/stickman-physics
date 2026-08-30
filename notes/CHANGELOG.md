@@ -1,5 +1,48 @@
 # Stickman Physics – Changelog
 
+## Level 12: Steinzeit (2. August 2026)
+
+Nach einer Zeichnung entstanden. Das Level ist kein Weg von links nach rechts, sondern
+ein **Rundweg**: unten nach rechts, über den großen Bogen hinauf, **kopfüber** an der
+Höhlendecke zurück nach links, und am Ende fällt man in die Burg.
+
+### Neue Mechaniken
+- **Klebeschuhe & Kopfüber-Laufen:** Wer die Kiste findet und am Bogenscheitel mit dem Kopf
+  an die Decke stößt, bleibt dort kleben und läuft umgedreht weiter. Die Figur dreht sich
+  weich um 180°, die Kamera schwenkt mit. Zurück geht es beim Verlassen des Deckenbereichs.
+- **Bogenschießen** (`E` / 🏹-Knopf): Pfeile fliegen mit einem Sechstel der Schwerkraft,
+  also im Bogen. Nachladezeit 25 Frames, unbegrenzt Pfeile.
+- **Leitern** (`↑ ↓` / ▼-Knopf): An der Leiter pausiert die normale Physik. Der ▼-Knopf
+  erscheint nur, solange man an einer Leiter steht.
+- **Farbsteine** in Blau, Gelb und Rot färben das ganze Level um. Sie bleiben liegen,
+  Punkte gibt es nur beim ersten Mal.
+- **Treffer statt Tod** (`enemyMode: "hit"`): Gegner stoßen zurück und kosten einen Treffer
+  in der Wertung, töten aber nicht.
+- **Siegertreppchen:** Platz 1, 2 oder 3 je nach gesammelten Punkten und Treffern.
+
+### Physik-Engine
+- `resolveCollisions()` kennt jetzt `player.gravitySign`. Bei `-1` wird die **Unterseite**
+  einer Plattform zum Boden. Für alle bestehenden Level ändert sich nichts – gegengerechnet
+  bis auf die letzte Nachkommastelle.
+- Neues Ereignis `head_hit`, über das die Klebeschuhe ausgelöst werden.
+- Neue Untergründe `fels` (0.72) und `moos` (0.88).
+
+### Inhalte
+- **Gegner:** Höhlenviecher, fleischfressende Pflanze, Borstenvieh und zwei Höhlendrachen
+  an der Decke. Die Drachen haben ein **Pfeilschild** – Pfeile prallen an ihren Schuppen ab.
+- **Hindernisse:** fallende Stalaktiten, feststehende Steinzacken an der Decke.
+- **Hintergrund:** Höhlenwand mit Höhlenmalerei im Parallax – Handabdrücke, Mammut, Hirsch,
+  Jäger mit Speer, Spirale.
+- **Vier Steinzeit-Fragen** zum Antippen: Feuer machen (Reibung), Höhlenmalerei, die Jagd
+  aufs Mammut und warum der Pfeil im Bogen fliegt.
+- **Musik:** Trommeln, Holzklopfen und eine karge Knochenflöte in Moll-Pentatonik.
+
+### Getestet
+Der Rundweg wurde mit der echten Physik-Engine simuliert: mit allen 20 geprüften
+Sprung-Timings erreichbar, ohne Klebeschuhe sauber blockiert.
+
+---
+
 ## Level 11: Zahlenland (1. August 2026)
 
 ### Neues Level

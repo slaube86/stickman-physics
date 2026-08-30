@@ -260,6 +260,19 @@ body {
   align-self: center;
 }
 
+/* Bogen-Knopf – nur in Levels mit Bogen sichtbar */
+.touch-shoot {
+  width: 80px;
+  height: 70px;
+  font-size: 26px;
+  align-self: center;
+  border-color: rgba(255,255,255,0.45);
+}
+
+.touch-shoot.hidden {
+  display: none;
+}
+
 .touch-btn:active,
 .touch-btn.active {
   background: rgba(255,255,255,0.2);

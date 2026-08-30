@@ -136,6 +136,56 @@ const FACTS = {
     title: "Halfpipe & Energieumwandlung",
     text: "In der Halfpipe wandelst du ständig Energie um: Unten hast du maximale Bewegungsenergie, oben an der Lippe maximale Höhenenergie. Das ist Energieerhaltung in Reinform!",
   },
+  // ── Steinzeit: Fragen zum Antippen ───────────────────────
+  stone_fire: {
+    icon: "🔥",
+    title: "Feuer machen",
+    text: "Reibung erzeugt Wärme – reib mal schnell die Hände aneinander, dann spürst du es selbst.",
+    question: {
+      text: "Wie haben die Menschen in der Steinzeit Feuer gemacht?",
+      options: ["Mit Streichhölzern", "Durch Reiben von Holz", "Mit einem Feuerzeug"],
+      correct: 1,
+      praise: "Genau! Beim Reiben wird das Holz so heiß, dass es zu glimmen anfängt.",
+      hint: "Streichhölzer gab es noch lange nicht – sie haben Holz aneinander gerieben, bis es heiß wurde.",
+    },
+  },
+  stone_painting: {
+    icon: "🖐️",
+    title: "Höhlenmalerei",
+    text: "Die ältesten Höhlenbilder sind über 30.000 Jahre alt – und immer noch zu sehen.",
+    question: {
+      text: "Womit haben Steinzeitmenschen an die Höhlenwände gemalt?",
+      options: ["Mit Erdfarben und Kohle", "Mit Filzstiften", "Mit Wasserfarben"],
+      correct: 0,
+      praise: "Richtig! Rote und gelbe Erde und Kohle aus dem Feuer – die Farben dieses Levels.",
+      hint: "Sie nahmen, was da war: farbige Erde und Kohle aus dem Feuer.",
+    },
+  },
+  stone_mammoth: {
+    icon: "🦣",
+    title: "Die Jagd",
+    text: "Mammuts waren zottelige Verwandte der Elefanten und lebten in der Eiszeit.",
+    question: {
+      text: "Welches Tier haben Steinzeitjäger wirklich gejagt?",
+      options: ["Einen Dinosaurier", "Ein Mammut", "Einen Löwenzahn"],
+      correct: 1,
+      praise: "Stimmt! Dinosaurier waren da schon viele Millionen Jahre ausgestorben.",
+      hint: "Es war das Mammut. Dinosaurier hat nie ein Mensch gesehen – die waren längst weg.",
+    },
+  },
+  stone_spear: {
+    icon: "🏹",
+    title: "Der Bogenschuss",
+    text: "Deshalb musst du bei weiter entfernten Zielen ein bisschen höher zielen.",
+    question: {
+      text: "Warum fliegt dein Pfeil nicht geradeaus, sondern im Bogen?",
+      options: ["Weil die Schwerkraft ihn nach unten zieht", "Weil er müde wird", "Weil er krumm ist"],
+      correct: 0,
+      praise: "Genau! Die Schwerkraft zieht am Pfeil, sobald er die Sehne verlässt.",
+      hint: "Es ist die Schwerkraft – sie zieht den Pfeil vom ersten Moment an nach unten.",
+    },
+  },
+
   // ── Zahlenland: Rechenaufgaben zum Antippen ──────────────
   math_plus: {
     icon: "➕",

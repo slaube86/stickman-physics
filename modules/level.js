@@ -574,6 +574,149 @@ export const LEVELS = [
     ],
   },
 
+  // Level 12 – Steinzeit
+  // Stufe 1+2: der Hinweg über den Boden. Bogen, Decke und Burg folgen später,
+  // das Ziel am Ende ist vorläufig.
+  {
+    id: 12,
+    name: "Steinzeit",
+    theme: "stoneage",
+    spawnX: 60,
+    spawnY: 280,
+    enemyMode: "hit", // Gegner stoßen zurück und kosten einen Treffer, töten aber nicht
+    bow: true, // Steinzeit-Jäger kann mit E bzw. dem 🏹-Knopf schießen
+    platforms: [
+      { x: 0,    y: 355, w: 300, h: 45,  surface: "fels" },
+      // Der Hügel mit der Höhle
+      { x: 360,  y: 330, w: 220, h: 70,  surface: "fels" },
+      { x: 640,  y: 355, w: 200, h: 45,  surface: "moos" },
+      { x: 900,  y: 330, w: 140, h: 70,  surface: "fels" },
+      { x: 1100, y: 355, w: 260, h: 45,  surface: "fels" },
+      // Erhöhte Plattform für das Borstenvieh
+      { x: 1420, y: 300, w: 180, h: 100, surface: "moos" },
+      // Stalaktiten-Passage
+      { x: 1660, y: 355, w: 280, h: 45,  surface: "fels" },
+      { x: 2000, y: 310, w: 120, h: 90,  surface: "fels" },
+      // Felsblock mit der Kiste
+      { x: 2180, y: 270, w: 280, h: 130, surface: "fels" },
+      // ─── Der große Bogen: Stufen nach oben ────────────────
+      { x: 2505, y: 223, w: 70, h: 15, surface: "fels" },
+      { x: 2620, y: 176, w: 70, h: 15, surface: "fels" },
+      { x: 2735, y: 129, w: 70, h: 15, surface: "fels" },
+      { x: 2850, y: 82,  w: 70, h: 15, surface: "fels" },
+      { x: 2965, y: 35,  w: 70, h: 15, surface: "fels" },
+      { x: 3080, y: -12, w: 70, h: 15, surface: "fels" },
+      { x: 3195, y: -59, w: 90, h: 15, surface: "fels" }, // Scheitel
+      // Felswand am Scheitel: ohne Klebeschuhe ist hier Schluss,
+      // mit ihnen springt man von hier an die Decke
+      { x: 3285, y: -140, w: 20, h: 81, surface: "fels" },
+      // ─── Die Höhlendecke: hier läuft man kopfüber ─────────
+      { x: 2500, y: -180, w: 800,  h: 20, surface: "fels", ceiling: true },
+      { x: 1900, y: -180, w: 555,  h: 20, surface: "fels", ceiling: true },
+      { x: 780,  y: -180, w: 1075, h: 20, surface: "fels", ceiling: true },
+      // ─── Die Burg: hier fällt man aus der Decke herunter ──
+      // Turm mit der Fahne, ganz oben
+      { x: 660, y: -70, w: 90,  h: 15, surface: "fels" },
+      // Burgdach mit einem Schacht bei x 900–918 für die Leiter
+      { x: 660, y: 10,  w: 240, h: 15, surface: "fels" },
+      { x: 918, y: 10,  w: 82,  h: 15, surface: "fels" },
+      // Burghof mit dem Siegertreppchen
+      { x: 680, y: 120, w: 320, h: 40, surface: "fels" },
+    ],
+    // Leitern in der Burg
+    ladders: [
+      { x: 900, y: -5,  w: 18, h: 125 }, // vom Dach hinunter in den Hof
+      { x: 700, y: -70, w: 18, h: 95 },  // vom Dach hinauf zum Turm
+    ],
+    castle: { x: 640, y: -90, w: 380, h: 250 },
+    podium: true, // Ziel ist ein Siegertreppchen mit Platzierung
+    // Die Kiste mit den Klebeschuhen
+    items: [{ x: 2300, y: 232, type: "stickyshoes" }],
+    // Nur mit Klebeschuhen kippt hier die Schwerkraft
+    // Endet rechts von der Burg, damit man im Burghof nicht
+    // versehentlich wieder an die Decke klebt
+    gravityZones: [{ x: 1020, y: -300, w: 2290, h: 240 }],
+    // Feststehende Steinzacken an der Decke
+    hazards: [
+      { x: 2280, y: -160, w: 60, h: 26, dir: "down" },
+      { x: 1580, y: -160, w: 60, h: 26, dir: "down" },
+    ],
+    coins: [
+      { x: 150,  y: 315 },
+      { x: 420,  y: 290 },
+      { x: 520,  y: 290 },
+      { x: 700,  y: 315 },
+      { x: 960,  y: 290 },
+      { x: 1200, y: 315 },
+      { x: 1310, y: 315 },
+      { x: 1480, y: 260 },
+      { x: 1750, y: 315 },
+      { x: 2050, y: 270 },
+      { x: 2260, y: 230 },
+      // Auf den Bogenstufen
+      { x: 2540, y: 190 },
+      { x: 2655, y: 143 },
+      { x: 2770, y: 96  },
+      { x: 2885, y: 49  },
+      { x: 3000, y: 2   },
+      { x: 3115, y: -45 },
+      // Kopfüber an der Decke
+      { x: 3050, y: -132 },
+      { x: 2700, y: -132 },
+      { x: 2150, y: -132 },
+      { x: 1750, y: -132 },
+      { x: 1250, y: -132 },
+      { x: 950,  y: -132 },
+      // In der Burg
+      { x: 960,  y: -25 }, // auf dem Dach
+      { x: 705,  y: -95 }, // oben auf dem Turm, nur über die Leiter
+      { x: 950,  y: 85  }, // im Burghof
+    ],
+    // Herabfallende Stalaktiten
+    spikes: [
+      { x: 1250, y: 130, floorY: 355, cycle: 180, phase: 30  },
+      { x: 1700, y: 120, floorY: 355, cycle: 170, phase: 0   },
+      { x: 1790, y: 120, floorY: 355, cycle: 190, phase: 70  },
+      { x: 1880, y: 120, floorY: 355, cycle: 160, phase: 140 },
+    ],
+    // Farbsteine färben das ganze Level um. Sie bleiben liegen,
+    // man kann die Farbe also jederzeit wieder wechseln.
+    colorStones: [
+      { x: 480,  y: 302,  color: "blau" },
+      { x: 1000, y: 302,  color: "gelb" },
+      { x: 1750, y: 327,  color: "rot"  },
+      { x: 2885, y: 54,   color: "blau" },
+      { x: 2400, y: -132, color: "gelb" },
+      { x: 1500, y: -132, color: "rot"  },
+      { x: 960,  y: 92,   color: "blau" },
+    ],
+    learnTriggers: [
+      { x: 200,  y: 315, w: 40, h: 40, factId: "stone_fire",     triggered: false },
+      { x: 700,  y: 315, w: 40, h: 40, factId: "stone_painting", triggered: false },
+      { x: 1250, y: 315, w: 40, h: 40, factId: "stone_mammoth",  triggered: false },
+      { x: 2400, y: 230, w: 40, h: 40, factId: "stone_spear",    triggered: false },
+    ],
+    // Das Siegertreppchen im Burghof
+    goal: { x: 780, y: 70, w: 60, h: 50 },
+    worldWidth: 3400,
+    worldTop: -300,
+    enemies: [
+      // Zwei Höhlenviecher am Hügel
+      { x: 380,  platformY: 330, patrolLeft: 365,  patrolRight: 575,  speed: 1.0, kind: "critter" },
+      { x: 500,  platformY: 330, patrolLeft: 365,  patrolRight: 575,  speed: 1.3, kind: "critter" },
+      // Fleischfressende Pflanze – steht fest und schnappt im Takt
+      { x: 760,  platformY: 355, kind: "plant", snapCycle: 110, snapPhase: 0 },
+      // Stachelvieh am Boden
+      { x: 1150, platformY: 355, patrolLeft: 1105, patrolRight: 1355, speed: 1.4, kind: "critter" },
+      // Borstenvieh auf der erhöhten Plattform
+      { x: 1450, platformY: 300, patrolLeft: 1425, patrolRight: 1595, speed: 1.2, kind: "bristle" },
+      // Zwei Höhlendrachen hängen an der Decke und schnappen im Takt.
+      // Ihre Schuppen halten Pfeile ab – man muss an ihnen vorbeitimen.
+      { x: 2650, platformY: -160, kind: "dragon", ceiling: true, arrowProof: true, snapCycle: 130, snapPhase: 0  },
+      { x: 1350, platformY: -160, kind: "dragon", ceiling: true, arrowProof: true, snapCycle: 150, snapPhase: 60 },
+    ],
+  },
+
   // Level 7 – Ninjago Tempel
   {
     id: 7,

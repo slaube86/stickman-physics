@@ -21,16 +21,21 @@ export class Stickman {
 
     // Kick-Animation
     this.kickTimer = 0;
+    // Bogen spannen und schießen (Steinzeit)
+    this.shootTimer = 0;
   }
 
   update(keys, dt) {
+    if (this.shootTimer > 0) this.shootTimer--;
+
     // Kick-Animation hat Vorrang vor allem anderen
     if (this.kickTimer > 0) {
       this.state = "kick";
       this.kickTimer--;
     } else if (!this.onGround) {
-      // State bestimmen
-      this.state = this.vy < 0 ? "jump" : "fall";
+      // Kopfüber ist "nach oben" genau andersherum
+      const sign = this.gravitySign === -1 ? -1 : 1;
+      this.state = this.vy * sign < 0 ? "jump" : "fall";
     } else if (Math.abs(this.vx) > 0.5) {
       this.state = "run";
     } else {
@@ -704,6 +709,161 @@ export class Stickman {
     ctx.moveTo(3, -13);
     ctx.lineTo(4 + legSwing.rightX * 0.6, -1 + legSwing.rightY * 0.4);
     ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // Steinzeit-Skin: Fellkleidung, wilde Haare, Bogen auf dem Rücken.
+  // flip = Drehung in Radiant (0 = normal, π = kopfüber mit Klebeschuhen),
+  // sticky = Klebeschuhe eingesammelt
+  drawCaveman(ctx, flip = 0, sticky = false) {
+    ctx.save();
+    // Um die Körpermitte drehen, damit die Füße oben landen
+    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+    ctx.rotate(flip);
+    ctx.translate(0, this.h / 2);
+    // Beim Überkopfdrehen kippt auch die Blickrichtung
+    const mirror = Math.cos(flip) < 0 ? -1 : 1;
+    ctx.scale(this.facing * mirror, 1);
+
+    ctx.strokeStyle = "#fff";
+    ctx.fillStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const headCY = -40;
+
+    // Bogen: beim Schießen nach vorne gespannt, sonst auf dem Rücken
+    ctx.lineWidth = 1.5;
+    if (this.shootTimer > 0) {
+      // Je frischer der Schuss, desto weiter ist die Sehne noch zurück
+      const pull = Math.max(0, (this.shootTimer - 4) / 8) * 7;
+      ctx.beginPath();
+      ctx.arc(13, -28, 11, -Math.PI * 0.42, Math.PI * 0.42);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(15.5, -37.5);
+      ctx.lineTo(13 - pull, -28);
+      ctx.lineTo(15.5, -18.5);
+      ctx.stroke();
+      // Pfeil auf der Sehne, solange gespannt wird
+      if (pull > 1) {
+        ctx.beginPath();
+        ctx.moveTo(13 - pull, -28);
+        ctx.lineTo(24, -28);
+        ctx.stroke();
+      }
+    } else {
+      ctx.beginPath();
+      ctx.arc(-7, -26, 11, -Math.PI * 0.75, Math.PI * 0.35);
+      ctx.stroke();
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(-14.5, -33.5);
+      ctx.lineTo(-3, -17);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Kopf
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, headCY, 7, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Wilde Haare
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 7; i++) {
+      const a = -Math.PI + (i / 6) * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 6.5, headCY + Math.sin(a) * 6.5);
+      ctx.lineTo(Math.cos(a) * 12, headCY + Math.sin(a) * 12);
+      ctx.stroke();
+    }
+
+    // Auge und Knochen im Haar
+    ctx.beginPath();
+    ctx.arc(3, headCY - 1, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-9, headCY - 8);
+    ctx.lineTo(-3, headCY - 11);
+    ctx.stroke();
+
+    // Rumpf
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, headCY + 7);
+    ctx.lineTo(0, -18);
+    ctx.stroke();
+
+    // Fellrock mit Zackensaum
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-9, -19);
+    ctx.lineTo(-7, -12);
+    ctx.lineTo(-4, -16);
+    ctx.lineTo(-1, -11);
+    ctx.lineTo(2, -16);
+    ctx.lineTo(5, -11);
+    ctx.lineTo(8, -15);
+    ctx.lineTo(9, -19);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Arme – beim Schießen streckt sich der vordere zum Bogen
+    const armSwing = this._getArmSwing();
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -30);
+    if (this.shootTimer > 0) {
+      ctx.lineTo(12, -28);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -30);
+      ctx.lineTo(-6, -26);
+    } else {
+      ctx.lineTo(-9, -22 + armSwing.left * 0.6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -30);
+      ctx.lineTo(9, -22 + armSwing.right * 0.6);
+    }
+    ctx.stroke();
+
+    // Beine
+    const legSwing = this._getLegSwing();
+    const footL = { x: -4 + legSwing.leftX * 0.7, y: -1 + legSwing.leftY * 0.5 };
+    const footR = { x: 4 + legSwing.rightX * 0.7, y: -1 + legSwing.rightY * 0.5 };
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(footL.x, footL.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(footR.x, footR.y);
+    ctx.stroke();
+
+    // Klebeschuhe: klobige Sohlen mit Noppen
+    if (sticky) {
+      ctx.lineWidth = 2.5;
+      for (const f of [footL, footR]) {
+        ctx.beginPath();
+        ctx.moveTo(f.x - 4, f.y);
+        ctx.lineTo(f.x + 5, f.y);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (const dx of [-2.5, 0.5, 3.5]) {
+          ctx.moveTo(f.x + dx, f.y + 1);
+          ctx.lineTo(f.x + dx, f.y + 3);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 2.5;
+      }
+    }
 
     ctx.restore();
   }

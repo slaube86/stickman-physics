@@ -10,7 +10,9 @@ export const SURFACES = {
   normal:    { friction: 0.70, label: 'Normal' },
   ice:       { friction: 0.98, label: 'Eis' },
   sand:      { friction: 0.60, label: 'Sand' },
-  trampolin: { friction: 0.70, bounce: 1.3, label: 'Trampolin' }
+  trampolin: { friction: 0.70, bounce: 1.3, label: 'Trampolin' },
+  fels:      { friction: 0.72, label: 'Fels' },
+  moos:      { friction: 0.88, label: 'Moos' }
 };
 
 export function applyGravity(player, gravity = DEFAULT_GRAVITY) {
@@ -66,6 +68,10 @@ export function resolveCollisions(player, platforms) {
   player._onSlope  = null;
   player._slopeAngle = 0;
 
+  // Mit Klebeschuhen läuft der Spieler kopfüber: dann ist die Unterseite
+  // einer Plattform sein Boden. gravitySign: 1 = normal, -1 = kopfüber.
+  const sign = player.gravitySign === -1 ? -1 : 1;
+
   for (const plat of platforms) {
     // ── Schrägplattform ──────────────────────────────────────
     if (plat.slope !== undefined) {
@@ -113,7 +119,18 @@ export function resolveCollisions(player, platforms) {
     const minOverlapY = Math.min(overlapTop, overlapBottom);
 
     if (minOverlapY < minOverlapX) {
-      if (overlapTop < overlapBottom) {
+      if (sign === -1) {
+        // Kopfüber: an der Unterseite landen, oben stößt man sich den Kopf
+        if (overlapBottom < overlapTop) {
+          player.y = plat.y + plat.h;
+          player.vy = 0;
+          player.onGround = true;
+          events.push({ type: 'landed', platform: plat });
+        } else {
+          player.y = plat.y - player.h;
+          player.vy = 0;
+        }
+      } else if (overlapTop < overlapBottom) {
         player.y = plat.y - player.h;
         if (plat.surface === 'trampolin' && player.vy > 2) {
           const bounce = SURFACES.trampolin.bounce || 1.3;
@@ -125,8 +142,10 @@ export function resolveCollisions(player, platforms) {
           events.push({ type: 'landed', platform: plat });
         }
       } else {
+        // Kopf gegen die Unterseite – mit Klebeschuhen hängt man sich hier an
         player.y = plat.y + plat.h;
         player.vy = 0;
+        events.push({ type: 'head_hit', platform: plat });
       }
     } else {
       if (overlapLeft < overlapRight) {
@@ -172,10 +191,14 @@ export function getCurrentSurface(player, platforms) {
         return SURFACES[plat.surface] || SURFACES.normal;
       }
     } else {
+      // Kopfüber ist die Unterseite der Plattform der Boden
+      const contact = player.gravitySign === -1
+        ? Math.abs(player.y - (plat.y + plat.h))
+        : Math.abs((player.y + player.h) - plat.y);
       if (
         player.x + player.w > plat.x &&
         player.x < plat.x + plat.w &&
-        Math.abs((player.y + player.h) - plat.y) < 2
+        contact < 2
       ) {
         return SURFACES[plat.surface] || SURFACES.normal;
       }

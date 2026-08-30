@@ -171,6 +171,7 @@ export class AudioManager {
       desert: this._melodyDesert.bind(this),
       skatepark: this._melodySkatepark.bind(this),
       numbers: this._melodyNumbers.bind(this),
+      stoneage: this._melodyStoneage.bind(this),
     };
 
     const melodyFn = melodies[theme] || melodies.normal;
@@ -587,6 +588,136 @@ export class AudioManager {
         }
       },
     };
+  }
+
+  // --- Steinzeit: Trommeln, Holzklopfen und Knochenflöte ---
+  _melodyStoneage() {
+    let running = true;
+
+    const STEP = 0.2; // langsamer und schwerer als das Zahlenland
+    let nextStep = this.ctx.currentTime + 0.05;
+    let stepNum = 0;
+    const activeNodes = [];
+
+    const scheduleSteps = () => {
+      if (!running || !this.ctx) return;
+
+      while (nextStep < this.ctx.currentTime + 1.2) {
+        const t = nextStep;
+        const step = stepNum % 16;
+
+        // Große Trommel auf 1 und 4 – der Herzschlag des Stücks
+        if (step % 8 === 0 || step % 8 === 3) {
+          const drum = this.ctx.createOscillator();
+          const drumEnv = this.ctx.createGain();
+          drum.type = "sine";
+          drum.frequency.setValueAtTime(110, t);
+          drum.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+          drumEnv.gain.setValueAtTime(0.65, t);
+          drumEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+          drum.connect(drumEnv);
+          drumEnv.connect(this.musicGain);
+          drum.start(t);
+          drum.stop(t + 0.24);
+          activeNodes.push(drum);
+        }
+
+        // Kleine Trommel als Gegenschlag
+        if (step % 8 === 6) {
+          const tom = this.ctx.createOscillator();
+          const tomEnv = this.ctx.createGain();
+          tom.type = "triangle";
+          tom.frequency.setValueAtTime(220, t);
+          tom.frequency.exponentialRampToValueAtTime(90, t + 0.12);
+          tomEnv.gain.setValueAtTime(0.32, t);
+          tomEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+          tom.connect(tomEnv);
+          tomEnv.connect(this.musicGain);
+          tom.start(t);
+          tom.stop(t + 0.16);
+          activeNodes.push(tom);
+        }
+
+        // Holzstöcke auf jedem zweiten Schritt
+        if (step % 2 === 1) {
+          const click = this.ctx.createOscillator();
+          const clickEnv = this.ctx.createGain();
+          click.type = "square";
+          click.frequency.setValueAtTime(1500, t);
+          click.frequency.exponentialRampToValueAtTime(700, t + 0.03);
+          clickEnv.gain.setValueAtTime(0.09, t);
+          clickEnv.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          click.connect(clickEnv);
+          clickEnv.connect(this.musicGain);
+          click.start(t);
+          click.stop(t + 0.05);
+          activeNodes.push(click);
+        }
+
+        nextStep += STEP;
+        stepNum++;
+      }
+    };
+
+    scheduleSteps();
+    const schedulerId = setInterval(scheduleSteps, 100);
+
+    // Knochenflöte: karge Moll-Pentatonik, viele Pausen
+    const notes = [
+      440, 0,   523, 587,  0,   440,  0,   0,
+      392, 0,   440, 0,    523, 0,    0,   0,
+      587, 0,   659, 587,  0,   523,  0,   0,
+      440, 392, 0,   440,  0,   0,    0,   0,
+    ];
+
+    const melodyLoop = this._playLoop(notes, STEP, "triangle");
+
+    return {
+      stop() {
+        running = false;
+        clearInterval(schedulerId);
+        melodyLoop.stop();
+        for (const n of activeNodes) {
+          try {
+            n.stop();
+          } catch {
+            /* bereits gestoppt */
+          }
+        }
+      },
+    };
+  }
+
+  // Pfeil abschießen: kurzes Schnalzen der Sehne plus Zischen
+  playArrow() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    // Sehne
+    const twang = this.ctx.createOscillator();
+    const twangEnv = this.ctx.createGain();
+    twang.type = "triangle";
+    twang.frequency.setValueAtTime(420, t);
+    twang.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+    twangEnv.gain.setValueAtTime(0.25, t);
+    twangEnv.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+    twang.connect(twangEnv);
+    twangEnv.connect(this.sfxGain);
+    twang.start(t);
+    twang.stop(t + 0.12);
+
+    // Zischen des Pfeils
+    const whoosh = this.ctx.createOscillator();
+    const whooshEnv = this.ctx.createGain();
+    whoosh.type = "sawtooth";
+    whoosh.frequency.setValueAtTime(1400, t + 0.02);
+    whoosh.frequency.exponentialRampToValueAtTime(2600, t + 0.16);
+    whooshEnv.gain.setValueAtTime(0.06, t + 0.02);
+    whooshEnv.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+    whoosh.connect(whooshEnv);
+    whooshEnv.connect(this.sfxGain);
+    whoosh.start(t + 0.02);
+    whoosh.stop(t + 0.18);
   }
 
   // Richtige Antwort: aufsteigender Dreiklang

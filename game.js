@@ -1,6 +1,6 @@
 // game.js – Haupt-Game-Loop, bringt alle Module zusammen
 
-import { Stickman } from "./modules/stickman.js?v=26";
+import { Stickman } from "./modules/stickman.js?v=32";
 import {
   applyGravity,
   applyMovement,
@@ -10,11 +10,11 @@ import {
   getCurrentSurface,
   JUMP_FORCE,
   DEFAULT_GRAVITY,
-} from "./modules/physics.js?v=26";
-import { loadLevel, getTotalLevels } from "./modules/level.js?v=26";
-import { LearnSystem } from "./modules/learn.js?v=26";
-import { UI, setupTouchControls } from "./modules/ui.js?v=26";
-import { AudioManager } from "./modules/audio.js?v=26";
+} from "./modules/physics.js?v=32";
+import { loadLevel, getTotalLevels } from "./modules/level.js?v=32";
+import { LearnSystem } from "./modules/learn.js?v=32";
+import { UI, setupTouchControls } from "./modules/ui.js?v=32";
+import { AudioManager } from "./modules/audio.js?v=32";
 
 // ─── Canvas Setup ──────────────────────────────────────────
 const canvas = document.getElementById("gameCanvas");
@@ -39,7 +39,14 @@ window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 // ─── Game State ────────────────────────────────────────────
-const keys = { left: false, right: false, jump: false };
+const keys = {
+  left: false,
+  right: false,
+  jump: false,
+  shoot: false,
+  up: false, // klettern hoch
+  down: false, // klettern runter
+};
 let currentLevelId = 1;
 let maxLevelUnlocked = 1;
 let level = null;
@@ -59,6 +66,28 @@ let invincible = false; // ab Zahl 10
 let hitTimer = 0; // Unverwundbarkeit nach einem Treffer (Frames)
 let specialAnimTimer = 0; // Spezial-Animation bei voller Punktzahl
 let floatTexts = []; // schwebende "+15" / "−1" Texte
+
+// ─── Steinzeit (Level 12) ──────────────────────────────────
+let hits = 0; // Treffer zählen für die Wertung auf dem Siegertreppchen
+let hasStickyShoes = false; // Klebeschuhe eingesammelt?
+let gravitySign = 1; // 1 = normal, -1 = kopfüber an der Decke
+let flipAngle = 0; // Drehung der Figur (0 … π), wird weich animiert
+let items = []; // einsammelbare Gegenstände (Klebeschuhe)
+let hazards = []; // feststehende Steinzacken
+let arrows = []; // fliegende Pfeile
+let shootCooldown = 0; // Nachladezeit in Frames
+let onLadder = false; // hängt gerade an einer Leiter
+let levelStartScore = 0; // Punktestand beim Levelstart, für die Wertung
+let placement = 0; // erreichter Platz auf dem Siegertreppchen (1–3)
+let colorStones = []; // Farbsteine, die das Level umfärben
+let tint = null; // aktuelle Levelfarbe, wird weich überblendet
+
+// Die drei Farben der Höhlenmalerei
+const STONE_COLORS = {
+  blau: [120, 165, 255],
+  gelb: [255, 214, 110],
+  rot: [255, 124, 106],
+};
 
 // ─── Systeme ───────────────────────────────────────────────
 const ui = new UI(canvas);
@@ -124,20 +153,36 @@ function startLevel(id) {
   gameState = "playing";
   levelCompleteTimer = 0;
   // Gegner aus Level-Daten instanziieren
-  enemies = (level.enemies || []).map((e) => ({
-    x: e.x,
-    y: e.platformY - ENEMY_H,
-    w: ENEMY_W,
-    h: ENEMY_H,
-    vx: e.speed || 1.2,
-    speed: e.speed || 1.2,
-    patrolLeft: e.patrolLeft,
-    patrolRight: e.patrolRight,
-    state: "patrol", // patrol | knocked | dead
-    facing: 1,
-    knockTimer: 0,
-    jumpedOver: false,
-  }));
+  enemies = (level.enemies || []).map((e) => {
+    const kind = e.kind || "critter";
+    // Pflanze und Drache sind größer und stehen fest
+    const w = kind === "plant" ? 26 : kind === "dragon" ? 40 : ENEMY_W;
+    const h = kind === "plant" ? 46 : kind === "dragon" ? 52 : ENEMY_H;
+    return {
+      x: e.x,
+      // Deckenbewohner hängen nach unten, alle anderen stehen oben drauf
+      y: e.ceiling ? e.platformY : e.platformY - h,
+      ceiling: !!e.ceiling,
+      w,
+      h,
+      vx: e.speed || 1.2,
+      speed: e.speed || 1.2,
+      patrolLeft: e.patrolLeft,
+      patrolRight: e.patrolRight,
+      state: "patrol", // patrol | knocked | dead
+      facing: 1,
+      knockTimer: 0,
+      jumpedOver: false,
+      // Steinzeit: critter | bristle | plant | dragon
+      kind,
+      arrowProof: !!e.arrowProof, // Drachenschuppen halten Pfeile ab
+      shieldFlash: 0,
+      snapCycle: e.snapCycle || 110,
+      snapTimer: e.snapPhase || 0,
+      snapping: false,
+      snapProgress: 0,
+    };
+  });
   // Fallende Eiszapfen instanziieren
   spikes = (level.spikes || []).map((s) => ({
     x: s.x,
@@ -157,6 +202,22 @@ function startLevel(id) {
   hitTimer = 0;
   specialAnimTimer = 0;
   floatTexts = [];
+  // Steinzeit zurücksetzen
+  hits = 0;
+  hasStickyShoes = false;
+  gravitySign = 1;
+  flipAngle = 0;
+  player.gravitySign = 1;
+  items = (level.items || []).map((it) => ({ ...it, taken: false }));
+  hazards = level.hazards || [];
+  arrows = [];
+  shootCooldown = 0;
+  onLadder = false;
+  levelStartScore = score;
+  placement = 0;
+  colorStones = (level.colorStones || []).map((s) => ({ ...s, used: false }));
+  tint = null;
+  ui.setBowVisible(!!level.bow);
   audio.startMusic(level.theme);
 }
 
@@ -177,6 +238,14 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     keys.jump = true;
   }
+  // Hoch/Runter zum Klettern an Leitern
+  if (e.code === "ArrowUp" || e.code === "KeyW") keys.up = true;
+  if (e.code === "ArrowDown" || e.code === "KeyS") {
+    e.preventDefault();
+    keys.down = true;
+  }
+  // E = Pfeil schießen (S bleibt fürs Runterklettern frei)
+  if (e.code === "KeyE") keys.shoot = true;
   // Menü: Enter zum Starten
   if (e.code === "Enter" || e.code === "Space") {
     if (gameState === "menu") {
@@ -220,6 +289,9 @@ document.addEventListener("keyup", (e) => {
   if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = false;
   if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW")
     keys.jump = false;
+  if (e.code === "ArrowUp" || e.code === "KeyW") keys.up = false;
+  if (e.code === "ArrowDown" || e.code === "KeyS") keys.down = false;
+  if (e.code === "KeyE") keys.shoot = false;
 });
 
 // ─── Weltkarte: Knoten-Positionen & Farben ────────────────
@@ -235,6 +307,7 @@ const MAP_NODES = [
   { id: 9, x: 752, y: 312, theme: "desert",    name: "Wüste"      },
   { id: 10, x: 690, y: 355, theme: "skatepark", name: "Skatepark"  },
   { id: 11, x: 560, y: 352, theme: "numbers",   name: "Zahlenland" },
+  { id: 12, x: 432, y: 268, theme: "stoneage",  name: "Steinzeit"  },
 ];
 
 const NODE_RGB = {
@@ -248,6 +321,7 @@ const NODE_RGB = {
   desert:    [215, 142,  38],
   skatepark: [180,  60, 220],
   numbers:   [110, 210, 200],
+  stoneage:  [175, 105,  50],
 };
 
 function drawLevelSelect() {
@@ -457,17 +531,99 @@ function updateFloatTexts() {
   }
 }
 
+// Gegner wegschleudern
+function knockEnemy(e, dir, force = 9) {
+  e.state = "knocked";
+  e.knockTimer = 50;
+  e.vx = dir * force;
+  e.vy = -7;
+  score += 20;
+  audio.playBounce();
+}
+
 // Roundhouse-Kick auf einen Gegner
 function kickEnemy(e) {
   player.kickTimer = 22;
   const dir = e.x + e.w / 2 > player.x + player.w / 2 ? 1 : -1;
   player.facing = dir;
-  e.state = "knocked";
-  e.knockTimer = 50;
-  e.vx = dir * 9;
-  e.vy = -7;
-  score += 20;
-  audio.playBounce();
+  knockEnemy(e, dir);
+}
+
+// ─── Pfeil und Bogen ───────────────────────────────────────
+function shootArrow() {
+  shootCooldown = 25;
+  player.shootTimer = 12;
+
+  const dir = player.facing;
+  // Kopfüber sitzt die Hand auf der anderen Körperseite
+  const handY =
+    gravitySign === 1 ? player.y + 18 : player.y + player.h - 18;
+
+  arrows.push({
+    x: player.x + player.w / 2 + dir * 16,
+    y: handY,
+    vx: dir * 9,
+    vy: 0,
+    // Pfeile fliegen im Bogen – deutlich leichter als der Spieler
+    g: 0.08 * gravitySign,
+    life: 200,
+  });
+  audio.playArrow();
+}
+
+function updateArrows() {
+  for (let i = arrows.length - 1; i >= 0; i--) {
+    const a = arrows[i];
+    a.vy += a.g;
+    a.x += a.vx;
+    a.y += a.vy;
+    a.life--;
+
+    let gone = a.life <= 0;
+
+    // Gegner treffen
+    if (!gone) {
+      for (const e of enemies) {
+        if (e.state === "knocked" || e.state === "dead") continue;
+        if (
+          a.x > e.x &&
+          a.x < e.x + e.w &&
+          a.y > e.y &&
+          a.y < e.y + e.h
+        ) {
+          if (e.arrowProof) {
+            // Der Pfeil prallt an den Schuppen ab
+            e.shieldFlash = 18;
+            addFloatText(a.x, a.y - 8, "Pling!");
+            audio.playWrong();
+          } else {
+            knockEnemy(e, Math.sign(a.vx) || 1, 7);
+            addFloatText(e.x + e.w / 2, e.y - 10, "Treffer!");
+          }
+          gone = true;
+          break;
+        }
+      }
+    }
+
+    // Im Fels stecken bleiben
+    if (!gone) {
+      for (const p of level.platforms) {
+        if (p.slope !== undefined) continue;
+        if (
+          a.x > p.x &&
+          a.x < p.x + p.w &&
+          a.y > p.y &&
+          a.y < p.y + p.h
+        ) {
+          gone = true;
+          break;
+        }
+      }
+    }
+
+    if (gone) arrows.splice(i, 1);
+  }
 }
 
 // Treffer: Die Zahl schrumpft (aus einer 3 wird wieder eine 2)
@@ -487,6 +643,194 @@ function damagePlayer(knockDir) {
     gameState = "gameOver";
     audio.stopMusic();
     audio.playGameOver();
+  }
+}
+
+// Treffer im Steinzeit-Level: zurückstoßen, aber niemand stirbt.
+// Die Treffer zählen später für die Wertung auf dem Siegertreppchen.
+function hitPlayer(knockDir) {
+  if (hitTimer > 0 || gameState !== "playing") return;
+
+  hits++;
+  hitTimer = 75;
+  player.vx = knockDir * 5;
+  player.vy = -4.5;
+  player.onGround = false;
+  audio.playNumberDown();
+  addFloatText(player.x + player.w / 2, player.y - 6, "Autsch!");
+}
+
+// ─── Leitern ───────────────────────────────────────────────
+const CLIMB_SPEED = 2.4;
+
+function ladderUnderPlayer() {
+  const pb = player.getBounds();
+  const cx = pb.x + pb.w / 2;
+  for (const l of level.ladders || []) {
+    if (
+      cx > l.x - 6 &&
+      cx < l.x + l.w + 6 &&
+      pb.y + pb.h > l.y &&
+      pb.y < l.y + l.h
+    ) {
+      return l;
+    }
+  }
+  return null;
+}
+
+// Gibt true zurück, wenn geklettert wird – dann übernimmt die Leiter
+// die Bewegung und die normale Physik pausiert.
+function updateLadder() {
+  const ladder = ladderUnderPlayer();
+
+  if (!ladder) {
+    onLadder = false;
+    return false;
+  }
+
+  // Anhängen, sobald hoch oder runter gedrückt wird
+  if (!onLadder && (keys.up || keys.down)) {
+    onLadder = true;
+    player.vx = 0;
+    player.vy = 0;
+  }
+  if (!onLadder) return false;
+
+  // Seitwärts steigt man wieder ab
+  if (keys.left || keys.right) {
+    onLadder = false;
+    return false;
+  }
+
+  player.vy = 0;
+  if (keys.up) player.y -= CLIMB_SPEED;
+  if (keys.down) player.y += CLIMB_SPEED;
+
+  // Oben angekommen: loslassen, damit man auf den Absatz treten kann
+  if (player.y + player.h <= ladder.y) {
+    player.y = ladder.y - player.h;
+    onLadder = false;
+    return false;
+  }
+  // Unten angekommen
+  if (player.y + player.h >= ladder.y + ladder.h) {
+    player.y = ladder.y + ladder.h - player.h;
+    onLadder = false;
+    return false;
+  }
+
+  player.vx = 0;
+  player.onGround = true; // an der Leiter fällt man nicht
+  return true;
+}
+
+// ─── Klebeschuhe & Schwerkraft-Umkehr ──────────────────────
+
+// Gegenstände einsammeln
+function updateItems() {
+  const pb = player.getBounds();
+  for (const it of items) {
+    if (it.taken) continue;
+    if (
+      pb.x < it.x + 26 &&
+      pb.x + pb.w > it.x - 26 &&
+      pb.y < it.y + 26 &&
+      pb.y + pb.h > it.y - 26
+    ) {
+      it.taken = true;
+      if (it.type === "stickyshoes") {
+        hasStickyShoes = true;
+        score += 50;
+        addFloatText(it.x, it.y - 12, "Klebeschuhe!");
+        audio.playPowerUp();
+      }
+    }
+  }
+}
+
+// ─── Farbsteine ────────────────────────────────────────────
+// Die Steine bleiben liegen – Punkte gibt es nur beim ersten Mal,
+// die Farbe kann man beliebig oft wechseln.
+function updateColorStones() {
+  const pb = player.getBounds();
+  for (const s of colorStones) {
+    const near =
+      pb.x < s.x + 22 &&
+      pb.x + pb.w > s.x - 22 &&
+      pb.y < s.y + 22 &&
+      pb.y + pb.h > s.y - 22;
+    if (!near) continue;
+
+    const rgb = STONE_COLORS[s.color];
+    if (!rgb) continue;
+
+    // Nur reagieren, wenn die Farbe wirklich wechselt
+    if (!tint || tint.name !== s.color) {
+      tint = { name: s.color, r: 255, g: 255, b: 255, target: rgb };
+      audio.playCoin();
+      addFloatText(s.x, s.y - 16, s.color.toUpperCase());
+    }
+    if (!s.used) {
+      s.used = true;
+      score += 15;
+    }
+  }
+
+  // Farbe weich überblenden
+  if (tint) {
+    tint.r += (tint.target[0] - tint.r) * 0.08;
+    tint.g += (tint.target[1] - tint.g) * 0.08;
+    tint.b += (tint.target[2] - tint.b) * 0.08;
+  }
+}
+
+// Ist der Spieler im Bereich, in dem die Decke begehbar ist?
+function inGravityZone() {
+  const zones = level.gravityZones;
+  if (!zones || !zones.length) return false;
+  const cx = player.x + player.w / 2;
+  return zones.some((z) => cx > z.x && cx < z.x + z.w);
+}
+
+function setGravitySign(sign) {
+  if (sign === gravitySign) return;
+  gravitySign = sign;
+  player.onGround = false;
+  audio.playBounce();
+  addFloatText(
+    player.x + player.w / 2,
+    player.y + player.h / 2,
+    sign === -1 ? "Klebeschuhe halten!" : "und wieder runter!",
+  );
+}
+
+// Kopfüber endet, sobald man den Deckenbereich seitlich verlässt –
+// dann fällt man herunter und dreht sich zurück.
+function updateGravityZones() {
+  if (gravitySign === -1 && !inGravityZone()) setGravitySign(1);
+
+  // Drehung weich nachziehen
+  const target = gravitySign === -1 ? Math.PI : 0;
+  const diff = target - flipAngle;
+  flipAngle += Math.abs(diff) < 0.02 ? diff : Math.sign(diff) * (Math.PI / 20);
+}
+
+// Feststehende Steinzacken
+function updateHazards() {
+  if (hitTimer > 0) return;
+  const pb = player.getBounds();
+  for (const h of hazards) {
+    const hy = h.dir === "down" ? h.y : h.y - h.h;
+    if (
+      pb.x < h.x + h.w &&
+      pb.x + pb.w > h.x &&
+      pb.y < hy + h.h &&
+      pb.y + pb.h > hy
+    ) {
+      hitPlayer(player.x + player.w / 2 < h.x + h.w / 2 ? -1 : 1);
+      return;
+    }
   }
 }
 
@@ -528,6 +872,8 @@ function updateSpikes() {
     ) {
       if (invincible) {
         audio.playBounce();
+      } else if (level.enemyMode === "hit") {
+        hitPlayer(player.x + player.w / 2 < s.x ? -1 : 1);
       } else {
         damagePlayer(player.x + player.w / 2 < s.x ? -1 : 1);
       }
@@ -554,6 +900,34 @@ function updateEnemies() {
       e.x += e.vx;
       e.y += e.vy;
       if (e.knockTimer <= 0) e.state = "dead";
+      continue;
+    }
+
+    if (e.shieldFlash > 0) e.shieldFlash--;
+
+    // Pflanze und Drache: laufen nicht, sondern schnappen im Takt
+    if (e.kind === "plant" || e.kind === "dragon") {
+      e.snapTimer++;
+      const phase = e.snapTimer % e.snapCycle;
+      // Die letzten 34 Frames des Takts wird geschnappt
+      const snapStart = e.snapCycle - 34;
+      e.snapping = phase >= snapStart;
+      e.snapProgress = e.snapping
+        ? Math.sin(((phase - snapStart) / 34) * Math.PI)
+        : 0;
+
+      // Nur das aufgerissene Maul tut weh
+      if (e.snapping && e.snapProgress > 0.35) {
+        const pbp = player.getBounds();
+        if (
+          pbp.x < e.x + e.w &&
+          pbp.x + pbp.w > e.x &&
+          pbp.y < e.y + e.h &&
+          pbp.y + pbp.h > e.y
+        ) {
+          hitPlayer(player.x + player.w / 2 < e.x + e.w / 2 ? -1 : 1);
+        }
+      }
       continue;
     }
 
@@ -592,6 +966,12 @@ function updateEnemies() {
       continue;
     }
 
+    // ── Treffer-Modus (Steinzeit): zurückstoßen statt kicken
+    if (level.enemyMode === "hit") {
+      if (touches) hitPlayer(player.x + player.w / 2 < e.x + e.w / 2 ? -1 : 1);
+      continue;
+    }
+
     // ── Standard: automatischer Roundhouse-Kick
     if (player.kickTimer <= 0 && touches) {
       kickEnemy(e);
@@ -604,12 +984,29 @@ function update(dt) {
   if (gameState !== "playing") return;
   if (learnSystem.isShowing) return; // Pause bei Lernkarte
 
-  // Bewegung
-  applyMovement(player, keys);
+  // An der Leiter übernimmt das Klettern die Bewegung
+  const climbing = level.ladders ? updateLadder() : false;
+  if (level.ladders) ui.setClimbVisible(!!ladderUnderPlayer());
 
-  // Sprung
+  // Bewegung
+  if (!climbing) applyMovement(player, keys);
+
+  // Pfeil und Bogen (Steinzeit)
+  if (shootCooldown > 0) shootCooldown--;
+  if (level.bow && keys.shoot && shootCooldown <= 0 && arrows.length < 12) {
+    shootArrow();
+  }
+  updateArrows();
+
+  // Klebeschuhe, Farbsteine & Schwerkraft-Umkehr (Steinzeit)
+  updateItems();
+  updateColorStones();
+  updateGravityZones();
+  player.gravitySign = gravitySign;
+
+  // Sprung – kopfüber springt man nach unten
   if (keys.jump && player.onGround) {
-    player.vy = JUMP_FORCE;
+    player.vy = JUMP_FORCE * gravitySign;
     player.onGround = false;
     learnSystem.checkEventTriggers("jump");
     if (learnSystem.isShowing) {
@@ -621,15 +1018,29 @@ function update(dt) {
 
   // Physik
   // Level-spezifische Schwerkraft (z.B. Mond/Space)
-  const gravity = level.gravity !== undefined ? level.gravity : undefined;
-  applyGravity(player, gravity);
+  const baseGravity =
+    level.gravity !== undefined ? level.gravity : DEFAULT_GRAVITY;
   const surface = getCurrentSurface(player, level.platforms);
-  applyFriction(player, surface);
-  applyPosition(player);
+  if (!climbing) {
+    applyGravity(player, baseGravity * gravitySign);
+    applyFriction(player, surface);
+    applyPosition(player);
+  }
 
-  // Kollisionen
-  const events = resolveCollisions(player, level.platforms);
+  // Kollisionen – an der Leiter steckt man sonst im Dachschacht fest
+  const events = climbing ? [] : resolveCollisions(player, level.platforms);
   for (const evt of events) {
+    // Mit Klebeschuhen hängt man sich an die Höhlendecke, sobald
+    // man mit dem Kopf drankommt
+    if (
+      evt.type === "head_hit" &&
+      hasStickyShoes &&
+      evt.platform.ceiling &&
+      gravitySign === 1 &&
+      inGravityZone()
+    ) {
+      setGravitySign(-1);
+    }
     learnSystem.checkEventTriggers(evt.type);
     if (learnSystem.isShowing) {
       audio.pauseMusic();
@@ -646,6 +1057,7 @@ function update(dt) {
 
   // Zahlen-Modus: Eiszapfen, Timer & Schwebetexte
   updateSpikes();
+  updateHazards();
   if (hitTimer > 0) hitTimer--;
   if (specialAnimTimer > 0) specialAnimTimer--;
   updateFloatTexts();
@@ -662,7 +1074,8 @@ function update(dt) {
     if (level.theme === "space" && player.y > 220) {
       targetCamY = 0; // Fokus auf Boden/Ziel
     } else {
-      targetCamY = player.y - GAME_H * 0.65;
+      // Kopfüber schaut man nach unten, also Figur höher ins Bild setzen
+      targetCamY = player.y - GAME_H * (gravitySign === -1 ? 0.3 : 0.65);
     }
     cameraY += (targetCamY - cameraY) * 0.08;
     cameraY = Math.max(level.worldTop, Math.min(0, cameraY));
@@ -723,6 +1136,25 @@ function update(dt) {
     pb.y + pb.h > goal.y
   ) {
     gameState = "levelComplete";
+
+    // Steinzeit: Platz auf dem Siegertreppchen bestimmen
+    if (level.podium) {
+      const earned = score - levelStartScore;
+      // Alles, was in diesem Level Punkte gibt – sonst käme man
+      // über 100 % und jeder Durchlauf wäre ein erster Platz
+      const maxPoints =
+        (level.coins?.length || 0) * 10 +
+        (level.items?.length || 0) * 50 +
+        (level.enemies || []).filter((e) => !e.arrowProof).length * 20 +
+        (level.colorStones?.length || 0) * 15 +
+        (level.learnTriggers?.length || 0) * 25;
+      const quote = maxPoints > 0 ? earned / maxPoints : 0;
+      if (quote >= 0.9 && hits === 0) placement = 1;
+      else if (quote >= 0.6) placement = 2;
+      else placement = 3;
+      score += [0, 300, 150, 50][placement];
+    }
+
     score += 100;
     // Zahlen-Modus: Je höher die Zahl, desto mehr Punkte
     if (level.numberMode) {
@@ -743,8 +1175,13 @@ function update(dt) {
     saveProgress();
   }
 
-  // Spieler fällt aus der Welt
-  if (player.y > GAME_H + 50) {
+  // Spieler fällt aus der Welt – kopfüber fällt er nach oben hinaus
+  const fellOut =
+    gravitySign === -1
+      ? level.worldTop !== undefined &&
+        player.y + player.h < level.worldTop - 20
+      : player.y > GAME_H + 50;
+  if (fellOut) {
     gameState = "gameOver";
     audio.stopMusic();
     audio.playGameOver();
@@ -784,8 +1221,14 @@ function render() {
   ui.drawPlatforms(ctx, level.platforms, camera);
   ui.drawCoins(ctx, level.coins, camera);
   ui.drawLearnTriggers(ctx, level.learnTriggers, camera);
+  ui.drawCastle(ctx, level.castle, camera);
+  ui.drawLadders(ctx, level.ladders, camera);
   ui.drawGoal(ctx, level.goal, camera, level.theme);
-  ui.drawSpikes(ctx, spikes, camera);
+  ui.drawSpikes(ctx, spikes, camera, level.theme);
+  ui.drawHazards(ctx, hazards, camera);
+  ui.drawItems(ctx, items, camera);
+  ui.drawColorStones(ctx, colorStones, camera, STONE_COLORS);
+  ui.drawArrows(ctx, arrows, camera);
   ui.drawEnemies(ctx, enemies, camera, level.theme);
 
   // Stickman zeichnen (relativ zur Kamera)
@@ -805,6 +1248,11 @@ function render() {
     player.drawSkater(ctx);
   } else if (level.theme === "numbers") {
     player.drawNumber(ctx, playerNumber, invincible, hitTimer);
+  } else if (level.theme === "stoneage") {
+    // Nach einem Treffer blinkt der Höhlenmensch
+    if (hitTimer <= 0 || Math.floor(hitTimer / 6) % 2 === 0) {
+      player.drawCaveman(ctx, flipAngle, hasStickyShoes);
+    }
   } else {
     player.draw(ctx);
   }
@@ -817,6 +1265,10 @@ function render() {
   if (specialAnimTimer > 0) drawSpecialAnim();
 
   ctx.restore(); // cameraY-Verschiebung beenden
+
+  // Levelfarbe der Farbsteine über die Szene legen – vor dem HUD,
+  // damit Punktestand und Lernkarten unverfälscht bleiben
+  ui.applyTint(ctx, tint);
 
   // HUD
   ui.updateHUD(score, `Level ${level.id}: ${level.name}`);
@@ -991,6 +1443,27 @@ function drawLevelComplete() {
     GAME_W / 2,
     240 + overlayY,
   );
+
+  // Steinzeit: Platz auf dem Siegertreppchen
+  if (level && level.podium && placement) {
+    const medal = ["", "🥇", "🥈", "🥉"][placement];
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 26px sans-serif";
+    ctx.fillText(`${medal}  ${placement}. PLATZ`, GAME_W / 2, 272 + overlayY);
+
+    ctx.globalAlpha = 0.65;
+    ctx.font = "12px sans-serif";
+    const tip =
+      placement === 1
+        ? "Perfekt – mehr geht nicht!"
+        : placement === 2
+          ? hits > 0
+            ? `Für Platz 1: alles einsammeln und ohne Treffer durch (${hits} kassiert)`
+            : "Für Platz 1: noch mehr einsammeln"
+          : "Für Platz 2: mehr als die Hälfte einsammeln";
+    ctx.fillText(tip, GAME_W / 2, 292 + overlayY);
+    ctx.globalAlpha = 1;
+  }
 
   // Zahlen-Modus: Zahl-Bonus anzeigen
   if (level && level.numberMode) {
